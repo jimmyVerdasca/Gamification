@@ -20,7 +20,7 @@ import org.json.simple.parser.ParseException;
  * 
  * @author jimmy
  */
-public class BluetoothIMUAPI {
+public final class BluetoothIMUAPI {
     BluetoothPairing imuHandler;
     
     private final byte ACQUITTEMENT = (byte) 0xff;
@@ -40,6 +40,14 @@ public class BluetoothIMUAPI {
     private double[][] accel_r_k;
     private double[][] gyro_r_k;
 
+    /**
+     * constructor
+     * 
+     * @throws FileNotFoundException read the IMUConfig.properties file to
+     *      know the friendly name of the imu and his service/protocole number
+     * @throws IOException if we can't read the MUConfig file
+     * @throws ParseException if the file is missbuilded
+     */
     public BluetoothIMUAPI() throws FileNotFoundException, IOException, ParseException {
         this.datasRegistre = new LinkedList<>();
         FileInputStream input = new FileInputStream("src/main/java/imu/IMUConfig.properties");
@@ -51,46 +59,54 @@ public class BluetoothIMUAPI {
         imuHandler.connect();
     }
     
-    public static void main(String[] args) throws IOException, FileNotFoundException, ParseException
-    {
-        BluetoothIMUAPI imuAPI = new BluetoothIMUAPI();
-        imuAPI.configure();
-        imuAPI.startCapture();
-        int i = 0;
-        while(i++ < 100) {
-            imuAPI.registerDatasIncoming();
-        }
-        imuAPI.stopCapture();
-    }
-    
+    /**
+     * set up the IMU
+     * 
+     * @throws IOException if the messages of configuration can't be sent.
+     */
     public void configure() throws IOException {
-        System.out.println("selecting");
         //Selecting Shimmer accel and gyro
+        System.out.println("configure1");
         imuHandler.sendMessage(new byte[]{(byte)0x08, (byte)0x40, (byte)0x10, (byte)0x00}, ACQUITTEMENT);
-        System.out.println("setting1");
         //Setting accel range to 4g
+        System.out.println("configure2");
         imuHandler.sendMessage(new byte[]{(byte)0x09, (byte)0x01,}, ACQUITTEMENT);
-        System.out.println("setting2");
         //Setting gyro range to 500dps
+        System.out.println("configure3");
         imuHandler.sendMessage(new byte[]{(byte)0x49, (byte)0x01,}, ACQUITTEMENT);
-        System.out.println("setting3");
         //Setting Shimmer sampling rate to 51.2Hz
+        System.out.println("configure4");
         imuHandler.sendMessage(new byte[]{(byte)0x05, (byte)0x80, (byte)0x02}, ACQUITTEMENT);
     }
     
+    /**
+     * ask the imu to start sending us measure of accelerometer a gyrometer
+     * 
+     * @throws IOException if we can't send the message
+     */
     public void startCapture() throws IOException {
-        System.out.println("start capture");
         imuHandler.sendMessage(new byte[]{START_CAPTURE}, ACQUITTEMENT);
+        System.out.println("capture started");
     }
     
+    /**
+     * say to the imu to stop measure datas
+     * 
+     * @throws IOException if we can't send the message
+     */
     public void stopCapture() throws IOException {
         imuHandler.sendMessage(new byte[]{STOP_CAPTURE}, ACQUITTEMENT);
     }
     
-    public void registerDatasIncoming() throws IOException {
+    /**
+     * after starting the capture, we can call this method to read
+     * the acceleration and gyroscope measures
+     * 
+     * @throws IOException if we can't read bytes from the IMU
+     */
+    public double[][] registerDatasIncoming() throws IOException {
         byte[] numBytes = imuHandler.readBytes(FRAME_SIZE);
         int timestamp = Byte.toUnsignedInt(numBytes[1]) + Byte.toUnsignedInt(numBytes[2]) * 256 + Byte.toUnsignedInt(numBytes[3]) * 65536;
-        System.out.println("timestamp " + timestamp);
         
         ByteBuffer bb = ByteBuffer.allocate(2);
         bb.order(ByteOrder.BIG_ENDIAN);
@@ -106,9 +122,6 @@ public class BluetoothIMUAPI {
         bb.put(numBytes[9]);
         short gyroZ = bb.getShort(0);
         bb.clear();
-        System.out.println("gyro_x " + (gyroX - gyro_b[0][0]));
-        System.out.println("gyro_y " + (gyroY - gyro_b[1][1]));
-        System.out.println("gyro_z " + (gyroZ - gyro_b[2][2]));
         
         bb.order(ByteOrder.LITTLE_ENDIAN);
         bb.put(numBytes[10]);
@@ -133,15 +146,16 @@ public class BluetoothIMUAPI {
         gyroMesure[1][0] = gyroY - accel_b[1][1];
         gyroMesure[2][0] = gyroZ - accel_b[2][2];
         gyroMesure = Util.multiplyMatrices(accel_r_k, gyroMesure);
-        for (double[] ds : accelMesure) {
-            for (double d : ds) {
-                System.out.print(d + "  ");
-            }
-                System.out.println("");
-        }
-        System.out.println("---");
+        return accelMesure;
     }
     
+    /**
+     * read the calibration.json file to set the calibration of the IMU
+     * 
+     * @throws FileNotFoundException if we don't find the calibration file
+     * @throws IOException if we can't read the calibration file
+     * @throws ParseException if there is a json error in the calibration file
+     */
     public void importCalibration() throws FileNotFoundException, IOException, ParseException {
         JSONParser jsonParser = new JSONParser();
         FileReader reader = new FileReader("src/main/java/imu/calibration.json");
