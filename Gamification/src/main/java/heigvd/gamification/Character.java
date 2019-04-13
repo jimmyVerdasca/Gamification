@@ -1,6 +1,9 @@
 package heigvd.gamification;
 
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import javax.imageio.ImageIO;
 
 /**
  * class representing the modele of the character in game
@@ -12,6 +15,8 @@ public class Character extends WallObject {
     private final int MAX_X;
     private final int MIN_X;
     private int currentSpeed;
+    private final BufferedImage imageShield;
+    private final int SHIELD_GAP;
     
     /**
      * constructor
@@ -23,9 +28,11 @@ public class Character extends WallObject {
      */
     public Character(int x, int y, int maxX) throws IOException {
         super("../../assets/character/astronaut.png", x, y);
-        
-        this.MAX_X =  maxX - getImageWidth();
+        imageShield = ImageIO.read(Background.class.getResource("../../assets/character/shield.png"));
+        SHIELD_GAP = (imageShield.getWidth() - image.getWidth()) / 2;
+        MAX_X =  maxX - getImageWidth();
         MIN_X = 0;
+        
     }
 
     /**
@@ -34,6 +41,13 @@ public class Character extends WallObject {
      */
     public int getX() {
         return x;
+    }
+    
+    public void draw(Graphics window, int decalageX, int decalageY, boolean withShield) {
+        super.draw(window, decalageX, decalageY);
+        if (withShield) {
+            window.drawImage(imageShield, x + decalageX  - SHIELD_GAP, y + decalageY + (image.getHeight() / 2) - (imageShield.getHeight() / 2), imageShield.getWidth(), imageShield.getHeight(), null);
+        }
     }
 
     /**
@@ -48,11 +62,14 @@ public class Character extends WallObject {
      * move the character relatively to his speed
      */
     public void move() {
-        x += currentSpeed;
-        if (x < MIN_X) {
+        if (x + currentSpeed < MIN_X) {
             x = MIN_X;
-        } else if (x > MAX_X) {
+            currentSpeed = 0;
+        } else if (x + currentSpeed > MAX_X) {
             x = MAX_X;
+            currentSpeed = 0;
+        } else {
+            x = x + currentSpeed;
         }
     }
     

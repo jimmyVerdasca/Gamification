@@ -1,6 +1,5 @@
-package heigvd.gamification;
+package heigvd.gamification.fallingitems;
 
-import collide.Collider;
 import java.io.IOException;
 
 /**
@@ -12,11 +11,11 @@ import java.io.IOException;
 public class Rock extends FallingItem {
     
     public Rock() throws IOException {
-        super("../../assets/background/big_rock.png", 0, new Collider(), 0.1);
+        super("../../assets/background/big_rock.png", 0, 0.1);
     }
 
     @Override
     public int setMaxSpeed(int maxSpeed) {
-        return maxSpeed / 2;
+        return maxSpeed / 4;
     }
 }

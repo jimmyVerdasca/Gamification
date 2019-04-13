@@ -4,10 +4,15 @@ import effortMeasurer.EffortCalculator;
 import effortMeasurer.IMUEffortCalculator;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.parser.ParseException;
+import java.lang.Thread;
+import java.util.Random;
+import java.util.TimerTask;
 
 /**
  * Game loop with position prediction from current speed
@@ -101,6 +106,11 @@ public final class GameLoop extends JFrame
         //Store current FPS.
         int lastSecondTime = (int)(lastUpdateTime / ONE_NS);
         long updateTotal = 0;
+        int nextObstacleCreationFrame = 100;
+        boolean shouldAddObstacle;
+        Random rand = new Random();
+        final int DELAY_BETWEEN_OBSTACLES = 23;
+        final int VARIATION_BETWEEN_OBSTACLES = 80;
         
         while (running)
         {
@@ -110,8 +120,11 @@ public final class GameLoop extends JFrame
             //Do as many game updates as we need to, potentially playing catchup.
             while ( now - lastUpdateTime > TIME_BETWEEN_UPDATES && updateCount < MAX_UPDATES_BEFORE_RENDER )
             {
-                boolean shouldAddObstacle = updateTotal % 100 == 0;
+                shouldAddObstacle = updateTotal % nextObstacleCreationFrame == 0;
                 updateGame(shouldAddObstacle);
+                if (shouldAddObstacle) {
+                    nextObstacleCreationFrame = rand.nextInt(VARIATION_BETWEEN_OBSTACLES) + DELAY_BETWEEN_OBSTACLES;
+                }
                 lastUpdateTime += TIME_BETWEEN_UPDATES;
                 updateCount++;
                 updateTotal++;
@@ -149,7 +162,7 @@ public final class GameLoop extends JFrame
                 try {
                     Thread.sleep(1);
                 } catch(InterruptedException e) {
-                    Thread.currentThread().interrupt(); // Here!
+                    Thread.currentThread().interrupt();
                     throw new RuntimeException(e);
                 }
                 
@@ -196,5 +209,16 @@ public final class GameLoop extends JFrame
     public static void main(String[] args)
     {
         GameLoop gl = new GameLoop();
+        gl.addWindowListener(new WindowAdapter(){
+            @Override
+            public void windowClosing(WindowEvent e){
+                gl.stop();
+                System.exit(0);
+            }
+        });
+    }
+
+    public void stop() {
+        running = false;
     }
 }
