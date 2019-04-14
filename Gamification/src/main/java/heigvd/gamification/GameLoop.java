@@ -1,6 +1,7 @@
 package heigvd.gamification;
 
 import effortMeasurer.EffortCalculator;
+import effortMeasurer.IMUCycleEffortCalculator;
 import effortMeasurer.IMUEffortCalculator;
 import javax.swing.*;
 import java.awt.*;
@@ -10,9 +11,7 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.parser.ParseException;
-import java.lang.Thread;
 import java.util.Random;
-import java.util.TimerTask;
 
 /**
  * Game loop with position prediction from current speed
@@ -53,7 +52,7 @@ public final class GameLoop extends JFrame
         
         //launch the effort calculator
         try {
-            ec = new IMUEffortCalculator();
+            ec = new IMUCycleEffortCalculator();
             ec.start();
         } catch (IOException ex) {
             Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);

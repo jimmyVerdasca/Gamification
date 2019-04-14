@@ -41,7 +41,7 @@ public abstract class EffortCalculator extends TimerTask {
      * overridable methode to set the relative detector on.
      */
     public void start() {
-        new Timer().scheduleAtFixedRate(this ,1000,getDELAY_BETWEEN_MEASURES());
+        new Timer().schedule(this ,1000);
     }
 
     /**

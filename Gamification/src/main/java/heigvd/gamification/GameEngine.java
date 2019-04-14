@@ -42,15 +42,16 @@ public class GameEngine extends JPanel {
     };
     
     //Current wallspeed
-    private int speed = 5;
+    private int speed = 0;
     
     private final int MAX_NB_OBSTACLES = 8;
     private final int ABSOLUTE_MAX_SPEED = 50;
     private final int MAX_SPEED = 30;
+    private final int MAX_CURRENT_SPEED_STEP = 2;
     private final int MS_BETWEEN_MAX_SPEED_UPDATES = 300;
     private int maxCurrentSpeed;
     
-    private final int CHARACTER_Y_DECALAGE = 300;
+    private final int CHARACTER_Y_DECALAGE = 100;
     private final int WINDOW_CENTER;
     private final int WALL_HEIGHT;
     private final int WALL_WIDTH = 576;
@@ -99,10 +100,12 @@ public class GameEngine extends JPanel {
     }
     
     public void updateMaxCurrentSpeed() {
-        if (maxCurrentSpeed < MAX_SPEED) {
-            maxCurrentSpeed++;
+        if (MAX_CURRENT_SPEED_STEP > Math.abs(MAX_SPEED - maxCurrentSpeed)) {
+            maxCurrentSpeed = MAX_SPEED;
+        } else if (maxCurrentSpeed < MAX_SPEED) {
+            maxCurrentSpeed += MAX_CURRENT_SPEED_STEP;
         } else if (maxCurrentSpeed > MAX_SPEED) {
-            maxCurrentSpeed--;
+            maxCurrentSpeed-= MAX_CURRENT_SPEED_STEP;
         }
     }
     

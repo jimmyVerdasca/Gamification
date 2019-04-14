@@ -16,8 +16,8 @@ import org.json.simple.parser.ParseException;
  */
 public class IMUEffortCalculator extends EffortCalculator {
 
-    protected BluetoothIMUAPI imu;
-    protected final Object lock = new Object();
+    private final BluetoothIMUAPI imu;
+    private final Object lock = new Object();
     private final LinkedList<Double> speedAverage;
     
     /**
@@ -45,7 +45,7 @@ public class IMUEffortCalculator extends EffortCalculator {
     public void run() {
         double newValue;
         try {
-            newValue = imu.registerDatasIncoming()[1][0];
+            newValue = imu.registerDatasIncoming()[0][0] + imu.registerDatasIncoming()[1][0] + imu.registerDatasIncoming()[2][0];
             synchronized(lock) {
                 speedAverage.remove();
                 speedAverage.add(Math.abs(newValue));
