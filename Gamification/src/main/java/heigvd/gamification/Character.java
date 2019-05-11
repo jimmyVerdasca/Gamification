@@ -27,8 +27,8 @@ public class Character extends WallObject {
      * @throws IOException 
      */
     public Character(int x, int y, int maxX) throws IOException {
-        super("../../assets/character/astronaut.png", x, y);
-        imageShield = ImageIO.read(Background.class.getResource("../../assets/character/shield.png"));
+        super("/assets/character/astronaut.png", x, y);
+        imageShield = ImageIO.read(Background.class.getResource("/assets/character/shield.png"));
         SHIELD_GAP = (imageShield.getWidth() - image.getWidth()) / 2;
         MAX_X =  maxX - getImageWidth();
         MIN_X = 0;

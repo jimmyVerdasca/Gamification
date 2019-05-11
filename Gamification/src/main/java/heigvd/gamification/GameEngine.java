@@ -24,7 +24,7 @@ import javax.swing.JPanel;
  * @author jimmy
  */
 public class GameEngine extends JPanel {
- 
+    
     //Game display where we draw objects of the game
     private BufferedImage back;
     //Two copies of the background image to scroll
@@ -52,6 +52,7 @@ public class GameEngine extends JPanel {
     private int maxCurrentSpeed;
     
     private final int CHARACTER_Y_DECALAGE = 100;
+    private final int CHARACTER_MAX_SPEED = 20;
     private final int WINDOW_CENTER;
     private final int WALL_HEIGHT;
     private final int WALL_WIDTH = 576;
@@ -138,17 +139,17 @@ public class GameEngine extends JPanel {
  
         // draw the game object's considering their position and interpolation
         int interpolationBackgrounds = (int) (speed * interpolation);
+        int interpolationCharacterX = (int)(character.getSpeed() * interpolation);
         backOne.draw(buffer, MIN_X, interpolationBackgrounds);
         backTwo.draw(buffer, MIN_X, interpolationBackgrounds);
-        int interpolationCharacterX = (int)(character.getSpeed() * interpolation);
         character.draw(buffer, MIN_X + interpolationCharacterX, 0, isShieldActivated);
         for (FallingItem obstacle : obstacles) {
             if (obstacle != null && obstacle.getY() < WALL_HEIGHT) {
-                int interpolationObstacle = (int) (obstacle.getSpeed() * interpolation);
+                int interpolationObstacle = (int) (interpolationBackgrounds + (obstacle.getSpeed() + 1/2.0 * obstacle.getAcceleration() * Math.pow(interpolation, 2)));
                 obstacle.draw(buffer, MIN_X, interpolationObstacle);
             }
         }
-        
+
         // Draw the image onto the window
         twoD.drawImage(back, null, 0, 0);
     }
@@ -292,4 +293,10 @@ public class GameEngine extends JPanel {
     public void deactivateShield() {
         isShieldActivated = false;
     }
+
+    public int getCHARACTER_MAX_SPEED() {
+        return CHARACTER_MAX_SPEED;
+    }
+    
+    
 }

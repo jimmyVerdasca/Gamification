@@ -25,7 +25,7 @@ public class Background extends WallObject {
      * @throws IOException if we can't find the image
      */
     public Background(int x, int y) throws IOException {
-        super("../../assets/background/background.png", x, y);
+        super("/assets/background/background_rock.png", x, y);
     }
     
     /**

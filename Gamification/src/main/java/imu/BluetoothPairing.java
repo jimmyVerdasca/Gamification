@@ -55,6 +55,7 @@ public class BluetoothPairing {
                         || remoteDevice.getBluetoothAddress().equals(name)) {
                     found =  true;
                     rd = remoteDevice;
+                    System.out.println("trouvé " + rd.getFriendlyName(false));
                 }
             }
         }
@@ -62,10 +63,15 @@ public class BluetoothPairing {
         uuidSet[0] = uuid;
         bluetoothDiscovery.searchServicesAvailable(uuidSet, rd);
         for (String service : bluetoothDiscovery.servicesURL) {
+            System.out.println("services " + service.getBytes());
             clientStream = (StreamConnection) Connector.open(service);
         }
-        dataOut = clientStream.openDataOutputStream();
-        dataIn = clientStream.openDataInputStream();
+        if(clientStream != null) {
+            dataOut = clientStream.openDataOutputStream();
+            dataIn = clientStream.openDataInputStream();
+        } else {
+            throw new IOException("service " + uuid + " not found");
+        }
     }
     
     /**

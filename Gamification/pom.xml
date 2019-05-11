@@ -7,11 +7,6 @@
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
-            <groupId>HEIGVD</groupId>
-            <artifactId>Gamification</artifactId>
-            <version>1.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
@@ -20,6 +15,31 @@
             <groupId>gov.nist.math</groupId>
             <artifactId>jama</artifactId>
             <version>1.0.3</version>
+        </dependency>
+        <dependency>
+            <groupId>HEIGVD</groupId>
+            <artifactId>bluecove</artifactId>
+            <version>2.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>HEIGVD</groupId>
+            <artifactId>wiigee</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+        <dependency>
+            <groupId>HEIGVD</groupId>
+            <artifactId>wigeepluginwiimote</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+        <dependency>
+            <groupId>HEIGVD</groupId>
+            <artifactId>purejavahidapi</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>HEIGVD</groupId>
+            <artifactId>jna</artifactId>
+            <version>4.0.0</version>
         </dependency>
     </dependencies>
     <properties>

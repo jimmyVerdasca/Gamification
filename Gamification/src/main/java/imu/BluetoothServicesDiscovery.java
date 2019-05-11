@@ -34,6 +34,7 @@ public class BluetoothServicesDiscovery implements DiscoveryListener {
         devicesFound = new HashSet<>();
         servicesURL = new HashSet<>();
         try {
+            System.setProperty("bluecove.stack", "winsock");
             localDevice = LocalDevice.getLocalDevice();
             agent = localDevice.getDiscoveryAgent();
             

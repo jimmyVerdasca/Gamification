@@ -59,6 +59,10 @@ public abstract class FallingItem extends WallObject {
     public void setX(int x) {
         this.x = x;
     }
+
+    public double getAcceleration() {
+        return acceleration;
+    }
     
     
     

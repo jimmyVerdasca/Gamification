@@ -9,7 +9,7 @@ import java.io.IOException;
 public class Shield extends FallingItem {
 
     public Shield() throws IOException {
-        super("../../assets/background/shield.png", 0, 0.1, false);
+        super("/assets/background/shield.png", 3, 0.1, false);
     }
 
     @Override

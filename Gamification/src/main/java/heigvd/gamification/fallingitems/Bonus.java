@@ -9,7 +9,7 @@ import java.io.IOException;
 public class Bonus extends FallingItem {
 
     public Bonus() throws IOException {
-        super("../../assets/background/powerup.png", 0, 0.15, false);
+        super("/assets/background/powerup.png", 3, 0.15, false);
     }
 
     @Override

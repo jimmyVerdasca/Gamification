@@ -2,7 +2,6 @@ package heigvd.gamification;
 
 import effortMeasurer.EffortCalculator;
 import effortMeasurer.IMUCycleEffortCalculator;
-import effortMeasurer.IMUEffortCalculator;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -36,7 +35,7 @@ public final class GameLoop extends JFrame
 
     //At the very most we will update the game this many times before a new render.
     //If you're worried about visual hitches more than perfect timing, set this to 1.
-    final int MAX_UPDATES_BEFORE_RENDER = 5;
+    final int MAX_UPDATES_BEFORE_RENDER = 1;
 
     //If we are able to get as high as this FPS, don't render again.
     final double TARGET_FPS = 60;
@@ -69,7 +68,7 @@ public final class GameLoop extends JFrame
         
         //create game modeles
         back = new GameEngine();
-        CharacterController cc = new CharacterController(back);
+        CharacterControllerJoycon cc = new CharacterControllerJoycon(back);
         
         bl.addLayoutComponent(back, BorderLayout.CENTER);
         setVisible(true);
@@ -158,15 +157,16 @@ public final class GameLoop extends JFrame
                 //This stops the app from consuming all the CPU. It makes this slightly less accurate, but is worth it.
                 //You can remove this block and it will still work (better), your CPU just climbs on certain OSes.
                 //FYI on some OS's this can cause pretty bad stuttering. Scroll down and have a look at different peoples' solutions to this.
-                try {
+                /*try {
                     Thread.sleep(1);
                 } catch(InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException(e);
-                }
+                }*/
                 
                 now = System.nanoTime();
             }
+            frameCount++;
         }
     }
     
