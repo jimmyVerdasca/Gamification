@@ -15,7 +15,7 @@ public class CharacterControllerJoycon {
 
     private final Character character;
     private final int MAX_MOVE_SPEED;
-    private final double MAX_POSSIBLE_ACCEL = 0.75;
+    private final double MAX_POSSIBLE_ACCEL = 2.25;
     private final double[] movement = new double[100];
     private int index = 0;
     private final Joycon joycon;
@@ -61,17 +61,14 @@ public class CharacterControllerJoycon {
         for (double s : movement) {
             total += s;
         }
-        System.out.println("average " + (total / index));
         return -(total / index) / MAX_POSSIBLE_ACCEL;
     }
     
     private void setSpeed(double evaluation) {
         if(evaluation > 1) {
             evaluation = 1;
-            System.out.println("evaluation > 1 : " + evaluation);
         } else if (evaluation < -1) {
             evaluation = -1;
-            System.out.println("evaluation < -1 : " + evaluation);
         }
         character.setSpeed((int)(MAX_MOVE_SPEED * evaluation));
     }

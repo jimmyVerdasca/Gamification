@@ -44,10 +44,11 @@ public class GameEngine extends JPanel {
     //Current wallspeed
     private int speed = 0;
     
-    private final int MAX_NB_OBSTACLES = 8;
+    private final int MAX_NB_OBSTACLES = 20;
     private final int ABSOLUTE_MAX_SPEED = 50;
     private final int MAX_SPEED = 30;
     private final int MAX_CURRENT_SPEED_STEP = 2;
+    private final int MAX_SPEED_STEP = 2;
     private final int MS_BETWEEN_MAX_SPEED_UPDATES = 300;
     private int maxCurrentSpeed;
     
@@ -106,7 +107,7 @@ public class GameEngine extends JPanel {
         } else if (maxCurrentSpeed < MAX_SPEED) {
             maxCurrentSpeed += MAX_CURRENT_SPEED_STEP;
         } else if (maxCurrentSpeed > MAX_SPEED) {
-            maxCurrentSpeed-= MAX_CURRENT_SPEED_STEP;
+            maxCurrentSpeed -= MAX_CURRENT_SPEED_STEP;
         }
     }
     
@@ -202,12 +203,19 @@ public class GameEngine extends JPanel {
      * @throws IllegalArgumentException if the percent is negative
      */
     public void setSpeed(double percent, double maxPossible) {
+        int newStep;
         if (percent < 0) {
             throw new IllegalArgumentException("effort can't be negative");
         } else if (percent > 1) {
-            speed = (int)(maxCurrentSpeed * (1 - (percent - 1) / (maxPossible - 1)));
+            newStep = (int)(maxCurrentSpeed * (1 - (percent - 1) / (maxPossible - 1))) - speed;
         } else {
-            speed = (int)(percent * maxCurrentSpeed);
+            newStep = (int)(percent * maxCurrentSpeed) - speed;
+        }
+        
+        if (newStep > 0) {
+            speed += Math.min(newStep, MAX_SPEED_STEP);
+        } else {
+            speed += Math.max(newStep, -MAX_SPEED_STEP);
         }
     }
 
