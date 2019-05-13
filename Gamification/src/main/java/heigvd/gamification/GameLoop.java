@@ -1,5 +1,6 @@
 package heigvd.gamification;
 
+import components.Slider;
 import effortMeasurer.EffortCalculator;
 import effortMeasurer.IMUCycleEffortCalculator;
 import javax.swing.*;
@@ -45,9 +46,9 @@ public final class GameLoop extends JFrame
      * constructor launching the game view,
      * the game modeles and the effort calculator
      */
-    public GameLoop()
+    public GameLoop() throws IOException
     {
-        super("Fixed Timestep Game Loop Test");
+        super();
         
         //launch the effort calculator
         try {
@@ -69,11 +70,24 @@ public final class GameLoop extends JFrame
         //create game modeles
         back = new GameEngine();
         CharacterControllerJoycon cc = new CharacterControllerJoycon(back);
-        
-        bl.addLayoutComponent(back, BorderLayout.CENTER);
-        setVisible(true);
         cp.add(back, BorderLayout.CENTER);
         
+        // slider
+        JPanel sliderPanel = new JPanel();
+        GridLayout gl = new GridLayout(5, 4);
+        sliderPanel.setLayout(gl);
+        Slider slider = new Slider(0, 20);
+        // add 2 void component to fill the gridlayout and put slider in right position
+        for (int i = 0; i < 16; i++) {
+            sliderPanel.add(new Component(){});
+        }
+        sliderPanel.add(slider);
+        cp.add(sliderPanel,BorderLayout.EAST);
+        Dimension dim = new Dimension(Toolkit.getDefaultToolkit().getScreenSize().width / 3, Toolkit.getDefaultToolkit().getScreenSize().height);
+        sliderPanel.setPreferredSize(dim);
+        ec.addObserver(slider);
+        
+        setVisible(true);
         //launch the game
         runGameLoop();
     }
@@ -176,7 +190,7 @@ public final class GameLoop extends JFrame
      */
     private void updateGame(boolean addingNextObstacle)
     {
-        back.setSpeed(ec.getEffort());
+        back.setSpeed(ec.getEffort(), ec.getMAX_REACHED());
         back.downBackground();
         back.downObstacles();
         back.getCharacter().move();
@@ -207,14 +221,19 @@ public final class GameLoop extends JFrame
      */
     public static void main(String[] args)
     {
-        GameLoop gl = new GameLoop();
-        gl.addWindowListener(new WindowAdapter(){
-            @Override
-            public void windowClosing(WindowEvent e){
-                gl.stop();
-                System.exit(0);
-            }
-        });
+        try {
+            GameLoop gl = new GameLoop();
+            gl.addWindowListener(new WindowAdapter(){
+                @Override
+                public void windowClosing(WindowEvent e){
+                    gl.stop();
+                    System.exit(0);
+                }
+            });
+        } catch (IOException ex) {
+            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
+            System.exit(1);
+        }
     }
 
     public void stop() {

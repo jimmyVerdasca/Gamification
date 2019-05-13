@@ -201,11 +201,11 @@ public class GameEngine extends JPanel {
      * @param percent of the maximum speed
      * @throws IllegalArgumentException if the percent is negative
      */
-    public void setSpeed(double percent) {
+    public void setSpeed(double percent, double maxPossible) {
         if (percent < 0) {
             throw new IllegalArgumentException("effort can't be negative");
         } else if (percent > 1) {
-            speed = (int)(maxCurrentSpeed / percent);
+            speed = (int)(maxCurrentSpeed * (1 - (percent - 1) / (maxPossible - 1)));
         } else {
             speed = (int)(percent * maxCurrentSpeed);
         }

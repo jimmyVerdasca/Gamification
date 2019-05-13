@@ -1,11 +1,9 @@
 package effortMeasurer;
 
-import java.io.IOException;
-import java.util.LinkedList;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * abstract class to implement if we want to use a different kind of detector
@@ -22,8 +20,10 @@ public abstract class EffortCalculator extends TimerTask {
     private final int LENGTH_AVERAGE_LIST;
     /*Value max expected for a maximum effort, should be updated by
     the child-classes depending of the detector types and effort of the user*/
-    private final double EXPECTED_MAX_AVERAGE;
+    private double EXPECTED_MAX_AVERAGE;
+    private double MAX_REACHED;
     private final int DELAY_BETWEEN_MEASURES;
+    private EffortObservable obs;
 
     /**
      * constructor build the list of "current measures".
@@ -33,8 +33,10 @@ public abstract class EffortCalculator extends TimerTask {
      */
     public EffortCalculator(double expectedMaxAverage, int lengthDataList, int delayBetweenMeasures) {
         EXPECTED_MAX_AVERAGE = expectedMaxAverage;
+        MAX_REACHED = expectedMaxAverage;
         LENGTH_AVERAGE_LIST = lengthDataList;
         DELAY_BETWEEN_MEASURES = delayBetweenMeasures;
+        obs = new EffortObservable();
     }
     
     /**
@@ -63,11 +65,19 @@ public abstract class EffortCalculator extends TimerTask {
      * @param effort the new effort value
      */
     public final void setEffort(double effort) {
+        if (effort > MAX_REACHED) {
+            MAX_REACHED = effort;
+        } 
         synchronized (lock) {
             this.effort = effort;
         }
+        obs.update();
     }
 
+    public double getMAX_REACHED() {
+        return MAX_REACHED;
+    }
+    
     public final double getEXPECTED_MAX_AVERAGE() {
         return EXPECTED_MAX_AVERAGE;
     }
@@ -78,5 +88,24 @@ public abstract class EffortCalculator extends TimerTask {
 
     public int getDELAY_BETWEEN_MEASURES() {
         return DELAY_BETWEEN_MEASURES;
+    }
+    
+    public void addObserver(Observer o) {
+        obs.addObserver(o);
+    }
+    
+    public class EffortObservable extends Observable {
+        protected void update() {
+            setChanged();
+            notifyObservers();
+        }
+        
+        public double getEffort() {
+            return EffortCalculator.this.getEffort();
+        }
+        
+        public double getMAX_REACHED() {
+            return EffortCalculator.this.getMAX_REACHED();
+        }
     }
 }

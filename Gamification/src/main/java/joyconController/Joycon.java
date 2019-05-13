@@ -1,10 +1,16 @@
 package joyconController;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import purejavahidapi.DeviceRemovalListener;
 import purejavahidapi.HidDevice;
 import purejavahidapi.HidDeviceInfo;
@@ -23,6 +29,7 @@ import purejavahidapi.PureJavaHidApi;
  */
 public class Joycon {
 
+    private Object lock = new Object();
     protected boolean j_Open;
     protected JoyconListener j_Listener;
     private HidDeviceInfo joyconInfo;
@@ -35,7 +42,6 @@ public class Joycon {
     private int[] stick_cal_y_l = new int[3];
     private int[] stick_cal_x_r = new int[3];
     private int[] stick_cal_y_r = new int[3];
-    private final int REPORT_LEN = 49;
     
 
     /**
@@ -95,9 +101,8 @@ public class Joycon {
             if (info.getManufacturerString() != null && (info.getManufacturerString().equals(JoyconConstant.MANUFACTURER)) && (info.getVendorId() == JoyconConstant.VENDOR_ID) && (info.getProductId() == joyconId)) {
                 System.out.println("Found a Nintendo gear!\nConecting...");
                 joyconInfo = info;
-            }
-            if (info.getManufacturerString() != null) {
-                System.out.println(info.getManufacturerString());
+            } else if (info.getManufacturerString() == null) {
+                joyconInfo = info;
             }
         }
         if (joyconInfo != null) {
@@ -110,95 +115,14 @@ public class Joycon {
                     System.out.println("Right!");
                 }
 
-                Thread.sleep(200);
-
-                //Set to HID mode
                 byte ids = 1;
-                byte[] datat = new byte[16];
-                datat[9] = 0x03;
-                datat[10] = 0x3F;
-                joycon.setOutputReport(ids, datat, 16);
-
-                Thread.sleep(46);
+                byte[] datat;
 
                 //Set the joycon user light to blinking
                 datat = new byte[16];
                 datat[9] = 0x30;
-                datat[10] = (byte) 240;
+                datat[10] = (byte) 1; // lights player i = 2^i
                 joycon.setOutputReport(ids, datat, 16);
-
-                Thread.sleep(46);
-
-                //Enable vibration
-                datat = new byte[16];
-                datat[9] = 0x48;
-                datat[10] = 0x01;
-                joycon.setOutputReport(ids, datat, 16);
-                
-                Thread.sleep(46);
-
-                //Some vibration
-                if (joyconInfo.getProductId() == JoyconConstant.JOYCON_LEFT) {
-                    datat = new byte[16];
-                    datat[1] = (byte) 0xc2;
-                    datat[2] = (byte) 0xc8;
-                    datat[3] = 0x03;
-                    datat[4] = 0x72;
-                    joycon.setOutputReport(ids, datat, 16);
-
-                    Thread.sleep(90);
-
-                    datat = new byte[16];
-                    datat[1] = 0x00;
-                    datat[2] = 0x01;
-                    datat[3] = 0x40;
-                    datat[4] = 0x40;
-                    joycon.setOutputReport(ids, datat, 16);
-
-                    Thread.sleep(46);
-
-                    datat = new byte[16];
-                    datat[1] = (byte) 0xc3;
-                    datat[2] = (byte) 0xc8;
-                    datat[3] = 0x60;
-                    datat[4] = 0x64;
-                    joycon.setOutputReport(ids, datat, 16);
-                } else if (joyconInfo.getProductId() == JoyconConstant.JOYCON_RIGHT) {
-                    datat = new byte[16];
-                    datat[5] = (byte) 0xc2;
-                    datat[6] = (byte) 0xc8;
-                    datat[7] = 0x03;
-                    datat[8] = 0x72;
-                    joycon.setOutputReport(ids, datat, 16);
-
-                    Thread.sleep(90);
-
-                    datat = new byte[16];
-                    datat[5] = 0x00;
-                    datat[6] = 0x01;
-                    datat[7] = 0x40;
-                    datat[8] = 0x40;
-                    joycon.setOutputReport(ids, datat, 16);
-
-                    Thread.sleep(16);
-
-                    datat = new byte[16];
-                    datat[5] = (byte) 0xc3;
-                    datat[6] = (byte) 0xc8;
-                    datat[7] = 0x60;
-                    datat[8] = 0x64;
-                    joycon.setOutputReport(ids, datat, 16);
-                }
-
-                Thread.sleep(30);
-
-                //Disable vibration
-                datat = new byte[16];
-                datat[9] = 0x48;
-                datat[10] = 0x00;
-                joycon.setOutputReport(ids, datat, 16);
-
-                Thread.sleep(16);
 
                 joycon.setInputReportListener(new InputReportListener() {
 
@@ -230,10 +154,11 @@ public class Joycon {
                                 double[] accelX = new double[3];
                                 ByteBuffer buffer = ByteBuffer.allocate(2);
                                 buffer.order(ByteOrder.LITTLE_ENDIAN);
-                                // there is 3 report of acceleration by transmission, at byte 38, 62 and 86 (2 byte long)
+                                // there is 3 report of acceleration by transmission, at byte 14, 26 and 38 (2 byte long)
+                                // others axes are at byte number 10,12,22,24,34 and 36
                                 for (int i = 0; i < 3; i++) {
-                                    buffer.put(data[(i * 24) + 38]);
-                                    buffer.put(data[(i * 24) + 39]);
+                                    buffer.put(data[(i * 12) + 14]);
+                                    buffer.put(data[(i * 12) + 15]);
                                     accelX[i] = buffer.getShort(0) * 0.000244f;
                                     buffer.clear();
                                 }
@@ -241,7 +166,6 @@ public class Joycon {
                                 this.horizontal = horizontal;
                                 this.vertical = vertical;
                             }
-                            //Subcommand code case
                         } else if (id == 33) {
                             if (data[12] == -112) {
                                 for (int i = 19; i < 37; i++) {
@@ -255,31 +179,10 @@ public class Joycon {
                                     factory_stick_cal[i - 19] = c;
                                 }
                             }
-                        } 
-                        /*ByteBuffer bb = ByteBuffer.allocate(2);
-                        bb.order(ByteOrder.LITTLE_ENDIAN);
-                        bb.put(data[34]);
-                        bb.put(data[35]);
-                        short accelY = bb.getShort(0);
-                        bb.clear();
-                        
-                        bb.put(data[36]);
-                        bb.put(data[37]);
-                        short accelZ = bb.getShort(0);
-                        bb.clear();
-                        
-                        bb.put(data[38]);
-                        bb.put(data[39]);
-                        short accelX = bb.getShort(0);
-                        
-                        double resultY = accelY * 0.000244f;
-                        double resultX = accelX * 0.000244f;
-                        double resultZ = accelZ * 0.000244f;
-                        System.out.printf("X : " + resultX + "   |");
-                        System.out.printf("Y : " + resultY + "   |");
-                        System.out.printf("Z : " + resultZ);
-                        System.out.println("");
-                        System.out.println(bytesToHex(data));*/
+                        }
+                        synchronized(lock) {
+                            lock.notify();
+                        }
                     }
                 });
                 joycon.setDeviceRemovalListener(new DeviceRemovalListener() {
@@ -297,7 +200,9 @@ public class Joycon {
                 datat[14] = 0x12;
                 joycon.setOutputReport(ids, datat, 16);
 
-                Thread.sleep(100);
+                synchronized(lock) {
+                    lock.wait();
+                }
 
                 if (joyconInfo.getProductId() == JoyconConstant.JOYCON_LEFT) {
                     stick_cal_x_l[1] = (factory_stick_cal[4] << 8) & 0xF00 | factory_stick_cal[3];
@@ -320,15 +225,15 @@ public class Joycon {
                 datat[9] = 0x40;
                 datat[10] = 0x01;
                 joycon.setOutputReport(ids, datat, 16);
-                Thread.sleep(40);
+                synchronized(lock) {
+                    lock.wait();
+                }
                 
+                // activate imu
                 datat = new byte[16];
                 datat[9] = 0x03;
                 datat[10] = 0x30;
                 joycon.setOutputReport(ids, datat, 16);
-
-                Thread.sleep(16);
-
             } catch (IOException ex) {
                 System.out.println("Error while opening connection to the Joy-Con!\nPlease try to close all software that could communicate with it and retry.");
             } catch (InterruptedException ex) {
@@ -339,7 +244,6 @@ public class Joycon {
         }
     }
     
-    /*
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
     public static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
@@ -349,5 +253,18 @@ public class Joycon {
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
         return new String(hexChars);
-    }*/
+    }
+    
+    private byte[] getMacAdress() {
+        InetAddress ip;
+        byte[] mac = null;
+        try {
+            ip = InetAddress.getLocalHost();
+            NetworkInterface network = NetworkInterface.getByInetAddress(ip);
+            mac = network.getHardwareAddress();
+        } catch (UnknownHostException | SocketException ex) {
+            Logger.getLogger(Joycon.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return mac;
+    }
 }

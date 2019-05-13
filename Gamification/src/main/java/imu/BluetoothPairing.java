@@ -47,16 +47,12 @@ public class BluetoothPairing {
      */
     public void connect() throws IOException {
         bluetoothDiscovery.searchDevicesAvailable();
-        boolean found = false;
         RemoteDevice rd = null;
-        while(!found) {
-            for (RemoteDevice remoteDevice : bluetoothDiscovery.devicesFound) {
-                if(remoteDevice.getFriendlyName(false).equals(name)
-                        || remoteDevice.getBluetoothAddress().equals(name)) {
-                    found =  true;
-                    rd = remoteDevice;
-                    System.out.println("trouvé " + rd.getFriendlyName(false));
-                }
+        for (RemoteDevice remoteDevice : bluetoothDiscovery.devicesFound) {
+            if(remoteDevice.getFriendlyName(false).equals(name)
+                    || remoteDevice.getBluetoothAddress().equals(name)) {
+                rd = remoteDevice;
+                System.out.println("trouvé " + rd.getFriendlyName(false));
             }
         }
         UUID[] uuidSet = new UUID[1];

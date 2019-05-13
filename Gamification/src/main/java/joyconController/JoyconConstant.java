@@ -13,6 +13,7 @@ public class JoyconConstant {
     public static final String MANUFACTURER = "Nintendo";
     public static final short JOYCON_LEFT = 0x2006;
     public static final short JOYCON_RIGHT = 0x2007;
+    public static final short JOYCON_ACQUITTEMENT = 0x03;
 
     //Shared Values
     public static final String MINUS = "MINUS";
