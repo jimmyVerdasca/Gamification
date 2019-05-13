@@ -21,9 +21,9 @@ public class CharacterControllerJoycon {
     private final Joycon joycon;
     private boolean isUPPressed = false;
     
-    public CharacterControllerJoycon(GameEngine gameEngine) {
-        this.character = gameEngine.getCharacter();
-        MAX_MOVE_SPEED = gameEngine.getCHARACTER_MAX_SPEED();
+    public CharacterControllerJoycon(Character character, int characterMaxSpeed) {
+        this.character = character;
+        MAX_MOVE_SPEED = characterMaxSpeed;
         for (int i = 0; i < movement.length; i++) {
             movement[i] = 0;
         }

@@ -6,16 +6,12 @@ import heigvd.gamification.fallingitems.FallingItem;
 import heigvd.gamification.fallingitems.LittleRock;
 import heigvd.gamification.fallingitems.Rock;
 import heigvd.gamification.fallingitems.Shield;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Toolkit;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Random;
 import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JPanel;
 
 /**
  * class containing the game logic
@@ -23,10 +19,8 @@ import javax.swing.JPanel;
  * each object of the game are contained here
  * @author jimmy
  */
-public class GameEngine extends JPanel {
+public class GameEngine {
     
-    //Game display where we draw objects of the game
-    private BufferedImage back;
     //Two copies of the background image to scroll
     private Background backOne;
     private Background backTwo;
@@ -54,16 +48,8 @@ public class GameEngine extends JPanel {
     
     private final int CHARACTER_Y_DECALAGE = 100;
     private final int CHARACTER_MAX_SPEED = 20;
-    private final int WINDOW_CENTER;
-    private final int WALL_HEIGHT;
     private final int WALL_WIDTH = 576;
-    private final int MIN_X;
  
-    /*
-    Current interpolation to know where to draw the game objects
-    depending of their own current speed and position
-    */
-    private float interpolation;
     private Random rand = new Random();
     private boolean isShieldActivated;
     
@@ -74,8 +60,6 @@ public class GameEngine extends JPanel {
     public GameEngine() {
         super();
         maxCurrentSpeed = MAX_SPEED;
-        WINDOW_CENTER = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
-        WALL_HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height;
         try {
             backOne = new Background();
             backTwo = new Background(0, backOne.getImageHeight());
@@ -83,11 +67,10 @@ public class GameEngine extends JPanel {
             Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
         }
         try {
-            character = new Character(WALL_WIDTH / 2, WALL_HEIGHT - CHARACTER_Y_DECALAGE, WALL_WIDTH); //48 is character image width
+            character = new Character(WALL_WIDTH); //wall width 
         } catch (IOException ex) {
             Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
         }
-        MIN_X = WINDOW_CENTER - backOne.getImageWidth() / 2;
         
         obstacles = new FallingItem[MAX_NB_OBSTACLES];
         
@@ -98,7 +81,6 @@ public class GameEngine extends JPanel {
                     updateMaxCurrentSpeed();
                 }
         } ,0,MS_BETWEEN_MAX_SPEED_UPDATES);
-        
     }
     
     public void updateMaxCurrentSpeed() {
@@ -109,50 +91,6 @@ public class GameEngine extends JPanel {
         } else if (maxCurrentSpeed > MAX_SPEED) {
             maxCurrentSpeed -= MAX_CURRENT_SPEED_STEP;
         }
-    }
-    
-    /**
-     * call the paint method
-     * 
-     * @param window graphics where is drawn the game
-     */
-    @Override
-    public void update(Graphics window) {
-        paint(window);
-    }
- 
-    /**
-     * paint the game in his current state + the interpolation that smooth the
-     * visuel effect
-     * 
-     * @param window graphics where is drawn the game
-     */
-    @Override
-    public void paint(Graphics window) {
-        Graphics2D twoD = (Graphics2D)window;
- 
-        if (back == null) {
-            back = (BufferedImage)(createImage(getWidth(), getHeight()));
-        }
- 
-        // Create a buffer to draw to
-        Graphics buffer = back.createGraphics();
- 
-        // draw the game object's considering their position and interpolation
-        int interpolationBackgrounds = (int) (speed * interpolation);
-        int interpolationCharacterX = (int)(character.getSpeed() * interpolation);
-        backOne.draw(buffer, MIN_X, interpolationBackgrounds);
-        backTwo.draw(buffer, MIN_X, interpolationBackgrounds);
-        character.draw(buffer, MIN_X + interpolationCharacterX, 0, isShieldActivated);
-        for (FallingItem obstacle : obstacles) {
-            if (obstacle != null && obstacle.getY() < WALL_HEIGHT) {
-                int interpolationObstacle = (int) (interpolationBackgrounds + (obstacle.getSpeed() + 1/2.0 * obstacle.getAcceleration() * Math.pow(interpolation, 2)));
-                obstacle.draw(buffer, MIN_X, interpolationObstacle);
-            }
-        }
-
-        // Draw the image onto the window
-        twoD.drawImage(back, null, 0, 0);
     }
     
     /**
@@ -186,20 +124,11 @@ public class GameEngine extends JPanel {
     }
     
     /**
-     * set the interpolation to call before a repaint
-     * 
-     * @param interp the new interpolation
-     */
-    public void setInterpolation(float interp)
-    {
-       interpolation = interp;
-    }
-    
-    /**
      * set the speed to a percentage [0 to 1] of the max speed
      * If the value is higher to 1 still calculate a value between 0 to 1
      * 
      * @param percent of the maximum speed
+     * @param maxPossible
      * @throws IllegalArgumentException if the percent is negative
      */
     public void setSpeed(double percent, double maxPossible) {
@@ -224,7 +153,7 @@ public class GameEngine extends JPanel {
      * 
      * @return the current speed of the wall
      */
-    int getSpeed() {
+    public int getSpeed() {
         return speed;
     }
 
@@ -233,7 +162,7 @@ public class GameEngine extends JPanel {
      * 
      * @return the character
      */
-    Character getCharacter() {
+    public Character getCharacter() {
         return character;
     }
 
@@ -305,6 +234,20 @@ public class GameEngine extends JPanel {
     public int getCHARACTER_MAX_SPEED() {
         return CHARACTER_MAX_SPEED;
     }
-    
-    
+
+    public boolean isIsShieldActivated() {
+        return isShieldActivated;
+    }
+
+    public FallingItem[] getObstacles() {
+        return obstacles;
+    }
+
+    public Background getBackOne() {
+        return backOne;
+    }
+
+    public Background getBackTwo() {
+        return backTwo;
+    }
 }

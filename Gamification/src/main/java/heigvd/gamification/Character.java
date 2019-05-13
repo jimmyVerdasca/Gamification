@@ -1,6 +1,7 @@
 package heigvd.gamification;
 
 import java.awt.Graphics;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -21,13 +22,11 @@ public class Character extends WallObject {
     /**
      * constructor
      * 
-     * @param x current x position
-     * @param y current y position
      * @param maxX maximum horizontal position possible (0 is the minimum)
      * @throws IOException 
      */
-    public Character(int x, int y, int maxX) throws IOException {
-        super("/assets/character/astronaut.png", x, y);
+    public Character(int maxX) throws IOException {
+        super("/assets/character/astronaut.png", maxX / 2, Toolkit.getDefaultToolkit().getScreenSize().height - 100);
         imageShield = ImageIO.read(Background.class.getResource("/assets/character/shield.png"));
         SHIELD_GAP = (imageShield.getWidth() - image.getWidth()) / 2;
         MAX_X =  maxX - getImageWidth();
@@ -102,7 +101,7 @@ public class Character extends WallObject {
      * 
      * @return the horizontal speed of the character
      */
-    int getSpeed() {
+    public int getSpeed() {
         return currentSpeed;
     }
 }

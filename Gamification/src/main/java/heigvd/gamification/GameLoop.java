@@ -1,31 +1,20 @@
 package heigvd.gamification;
 
-import components.Slider;
 import effortMeasurer.EffortCalculator;
-import effortMeasurer.IMUCycleEffortCalculator;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.json.simple.parser.ParseException;
 import java.util.Random;
+import menu.GamePanel;
 
 /**
  * Game loop with position prediction from current speed
  * It allows items of the game to be displayed smoothly
  */
-public final class GameLoop extends JFrame
+public final class GameLoop
 {
     
-    private GameEngine back;
-    private EffortCalculator ec;
+    private final GameEngine gameEngine;
+    private final EffortCalculator effortCalculator;
     private boolean running = false;
-    private int fps = 60;
-    private int frameCount = 0;
-    
     
     //Number of time the monitor refresh in one second
     final double GAME_HERTZ = 30.0;
@@ -41,55 +30,21 @@ public final class GameLoop extends JFrame
     //If we are able to get as high as this FPS, don't render again.
     final double TARGET_FPS = 60;
     final double TARGET_TIME_BETWEEN_RENDERS = ONE_NS / TARGET_FPS;
+    private final GamePanel gamePanel;
     
     /**
      * constructor launching the game view,
      * the game modeles and the effort calculator
+     * @param gameEngine
+     * @param effortCalculator
+     * @param gamePanel
+     * @throws java.io.IOException If we can't load the slider image
      */
-    public GameLoop() throws IOException
+    public GameLoop(GameEngine gameEngine, EffortCalculator effortCalculator, GamePanel gamePanel) throws IOException
     {
-        super();
-        
-        //launch the effort calculator
-        try {
-            ec = new IMUCycleEffortCalculator();
-            ec.start();
-        } catch (IOException ex) {
-            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ParseException ex) {
-            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        //launch the view
-        Container cp = getContentPane();
-        BorderLayout bl = new BorderLayout();
-        cp.setLayout(bl);
-        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        this.setUndecorated(true);
-        
-        //create game modeles
-        back = new GameEngine();
-        CharacterControllerJoycon cc = new CharacterControllerJoycon(back);
-        cp.add(back, BorderLayout.CENTER);
-        
-        // slider
-        JPanel sliderPanel = new JPanel();
-        GridLayout gl = new GridLayout(5, 4);
-        sliderPanel.setLayout(gl);
-        Slider slider = new Slider(0, 20);
-        // add 2 void component to fill the gridlayout and put slider in right position
-        for (int i = 0; i < 16; i++) {
-            sliderPanel.add(new Component(){});
-        }
-        sliderPanel.add(slider);
-        cp.add(sliderPanel,BorderLayout.EAST);
-        Dimension dim = new Dimension(Toolkit.getDefaultToolkit().getScreenSize().width / 3, Toolkit.getDefaultToolkit().getScreenSize().height);
-        sliderPanel.setPreferredSize(dim);
-        ec.addObserver(slider);
-        
-        setVisible(true);
-        //launch the game
-        runGameLoop();
+        this.gameEngine = gameEngine;
+        this.effortCalculator = effortCalculator;
+        this.gamePanel = gamePanel;
     }
     
     //Starts a new thread and runs the game loop in it.
@@ -158,8 +113,6 @@ public final class GameLoop extends JFrame
             int thisSecond = (int) (lastUpdateTime / ONE_NS);
             if (thisSecond > lastSecondTime)
             {
-                fps = frameCount;
-                frameCount = 0;
                 lastSecondTime = thisSecond;
             }
             
@@ -180,7 +133,6 @@ public final class GameLoop extends JFrame
                 
                 now = System.nanoTime();
             }
-            frameCount++;
         }
     }
     
@@ -190,15 +142,15 @@ public final class GameLoop extends JFrame
      */
     private void updateGame(boolean addingNextObstacle)
     {
-        back.setSpeed(ec.getEffort(), ec.getMAX_REACHED());
-        back.downBackground();
-        back.downObstacles();
-        back.getCharacter().move();
-        back.getCharacter().downVelocity();
+        gameEngine.setSpeed(effortCalculator.getEffort(), effortCalculator.getMAX_REACHED());
+        gameEngine.downBackground();
+        gameEngine.downObstacles();
+        gameEngine.getCharacter().move();
+        gameEngine.getCharacter().downVelocity();
         if (addingNextObstacle) {
-            back.addObstacle();
+            gameEngine.addObstacle();
         }
-        back.checkCollide();
+        gameEngine.checkCollide();
     }
     
     /**
@@ -210,31 +162,11 @@ public final class GameLoop extends JFrame
      */
     private void drawGame(float interpolation)
     {
-        back.setInterpolation(interpolation);
-        back.repaint();
+        gamePanel.setInterpolation(interpolation);
+        gamePanel.repaint();
     }
     
-    /**
-     * entry point of the program
-     * 
-     * @param args currently no needs arguments
-     */
-    public static void main(String[] args)
-    {
-        try {
-            GameLoop gl = new GameLoop();
-            gl.addWindowListener(new WindowAdapter(){
-                @Override
-                public void windowClosing(WindowEvent e){
-                    gl.stop();
-                    System.exit(0);
-                }
-            });
-        } catch (IOException ex) {
-            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
-            System.exit(1);
-        }
-    }
+    
 
     public void stop() {
         running = false;
