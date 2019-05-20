@@ -8,6 +8,8 @@ import heigvd.gamification.fallingitems.Rock;
 import heigvd.gamification.fallingitems.Shield;
 import java.awt.Toolkit;
 import java.io.IOException;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.Random;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -37,21 +39,23 @@ public class GameEngine {
     
     //Current wallspeed
     private int speed = 0;
+    private long score = 0;
     
     private final int MAX_NB_OBSTACLES = 20;
-    private final int ABSOLUTE_MAX_SPEED = 50;
-    private final int MAX_SPEED = 30;
+    private final int ABSOLUTE_MAX_SPEED = 40;
+    private final int MAX_SPEED = 25;
     private final int MAX_CURRENT_SPEED_STEP = 2;
-    private final int MAX_SPEED_STEP = 2;
+    private final int MAX_SPEED_STEP = 3;
     private final int MS_BETWEEN_MAX_SPEED_UPDATES = 300;
     private int maxCurrentSpeed;
     
-    private final int CHARACTER_Y_DECALAGE = 100;
     private final int CHARACTER_MAX_SPEED = 20;
     private final int WALL_WIDTH = 576;
  
     private Random rand = new Random();
     private boolean isShieldActivated;
+    
+    private ScoreObservable obs;
     
     /**
      * constructor of the game
@@ -81,6 +85,7 @@ public class GameEngine {
                     updateMaxCurrentSpeed();
                 }
         } ,0,MS_BETWEEN_MAX_SPEED_UPDATES);
+        obs = new ScoreObservable();
     }
     
     public void updateMaxCurrentSpeed() {
@@ -95,10 +100,17 @@ public class GameEngine {
     
     /**
      * increment the position of the backgrounds relatively to the current speed
+     * and update the score relatively to the increment
      */
     public void downBackground() {
         backOne.incrementY(speed);
         backTwo.incrementY(speed);
+        incrementScore(speed);
+    }
+    
+    public void incrementScore(long increment) {
+        score += increment;
+        obs.update();
     }
     
     public void downObstacles() {
@@ -249,5 +261,20 @@ public class GameEngine {
 
     public Background getBackTwo() {
         return backTwo;
+    }
+    
+    public void addScoreObserver(Observer o) {
+        obs.addObserver(o);
+    }
+    
+    public class ScoreObservable extends Observable {
+        protected void update() {
+            setChanged();
+            notifyObservers();
+        }
+        
+        public long getScore() {
+            return score;
+        }
     }
 }

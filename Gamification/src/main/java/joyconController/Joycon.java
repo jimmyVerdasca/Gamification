@@ -180,9 +180,6 @@ public class Joycon {
                                 }
                             }
                         }
-                        synchronized(lock) {
-                            lock.notify();
-                        }
                     }
                 });
                 joycon.setDeviceRemovalListener(new DeviceRemovalListener() {
@@ -199,10 +196,8 @@ public class Joycon {
                 datat[11] = 0x60;
                 datat[14] = 0x12;
                 joycon.setOutputReport(ids, datat, 16);
-
-                synchronized(lock) {
-                    lock.wait();
-                }
+                
+                Thread.sleep(45);
 
                 if (joyconInfo.getProductId() == JoyconConstant.JOYCON_LEFT) {
                     stick_cal_x_l[1] = (factory_stick_cal[4] << 8) & 0xF00 | factory_stick_cal[3];
@@ -225,9 +220,8 @@ public class Joycon {
                 datat[9] = 0x40;
                 datat[10] = 0x01;
                 joycon.setOutputReport(ids, datat, 16);
-                synchronized(lock) {
-                    lock.wait();
-                }
+                
+                Thread.sleep(45);
                 
                 // activate imu
                 datat = new byte[16];

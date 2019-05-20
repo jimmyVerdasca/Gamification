@@ -2,8 +2,8 @@ package menu;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,6 +21,7 @@ public class MenuPanel extends JPanel {
         Container cp = menu.getContentPane();
         cp.setLayout(new BorderLayout());
         JButton button = new JButton("PLAY");
+        button.setPreferredSize(new Dimension(200, 50));
         cp.add(button, BorderLayout.CENTER);
         button.addActionListener((ActionEvent e) -> {
             try { 

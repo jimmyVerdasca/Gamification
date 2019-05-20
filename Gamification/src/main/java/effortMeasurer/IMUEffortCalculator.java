@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
 /**
@@ -43,9 +44,11 @@ public class IMUEffortCalculator extends EffortCalculator {
      */
     @Override
     public void run() {
+        double[][] pair;
         double newValue;
         try {
-            newValue = imu.registerDatasIncoming()[0][0] + imu.registerDatasIncoming()[1][0] + imu.registerDatasIncoming()[2][0];
+            pair = imu.registerDatasIncoming();
+            newValue = pair[0][0] + pair[1][0] + pair[2][0];
             synchronized(lock) {
                 speedAverage.remove();
                 speedAverage.add(Math.abs(newValue));

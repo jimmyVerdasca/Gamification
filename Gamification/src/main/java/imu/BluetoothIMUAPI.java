@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.Properties;
+import javafx.util.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -39,6 +40,10 @@ public final class BluetoothIMUAPI {
     
     private double[][] accel_r_k;
     private double[][] gyro_r_k;
+    
+    private byte[] buffer;
+    private double[][] accelMesure = new double[3][1];
+    private ByteBuffer bb = ByteBuffer.allocate(2);
 
     /**
      * constructor
@@ -57,6 +62,7 @@ public final class BluetoothIMUAPI {
         importCalibration();
         imuHandler = new BluetoothPairing(prop.getProperty("deviceName"), uuid);
         imuHandler.connect();
+        bb.order(ByteOrder.LITTLE_ENDIAN);
     }
     
     /**
@@ -105,47 +111,24 @@ public final class BluetoothIMUAPI {
      * @throws IOException if we can't read bytes from the IMU
      */
     public double[][] registerDatasIncoming() throws IOException {
-        byte[] numBytes = imuHandler.readBytes(FRAME_SIZE);
-        int timestamp = Byte.toUnsignedInt(numBytes[1]) + Byte.toUnsignedInt(numBytes[2]) * 256 + Byte.toUnsignedInt(numBytes[3]) * 65536;
+        buffer = imuHandler.readBytes(FRAME_SIZE);
         
-        ByteBuffer bb = ByteBuffer.allocate(2);
-        bb.order(ByteOrder.BIG_ENDIAN);
-        bb.put(numBytes[4]);
-        bb.put(numBytes[5]);
-        short gyroX = bb.getShort(0);
-        bb.clear();
-        bb.put(numBytes[6]);
-        bb.put(numBytes[7]);
-        short gyroY = bb.getShort(0);
-        bb.clear();
-        bb.put(numBytes[8]);
-        bb.put(numBytes[9]);
-        short gyroZ = bb.getShort(0);
+        bb.put(buffer[10]);
+        bb.put(buffer[11]);
+        accelMesure[0][0] = bb.getShort(0) - accel_b[0][0];
         bb.clear();
         
-        bb.order(ByteOrder.LITTLE_ENDIAN);
-        bb.put(numBytes[10]);
-        bb.put(numBytes[11]);
-        short accelX = bb.getShort(0);
+        bb.put(buffer[12]);
+        bb.put(buffer[13]);
+        accelMesure[1][0] = bb.getShort(0) - accel_b[1][1];
         bb.clear();
-        bb.put(numBytes[12]);
-        bb.put(numBytes[13]);
-        short accelY = bb.getShort(0);
+        
+        bb.put(buffer[14]);
+        bb.put(buffer[15]);
+        accelMesure[2][0] = bb.getShort(0) - accel_b[2][2];
         bb.clear();
-        bb.put(numBytes[14]);
-        bb.put(numBytes[15]);
-        short accelZ = bb.getShort(0);
-        bb.clear();
-        double[][] accelMesure = new double[3][1];
-        accelMesure[0][0] = accelX - accel_b[0][0];
-        accelMesure[1][0] = accelY - accel_b[1][1];
-        accelMesure[2][0] = accelZ - accel_b[2][2];
+        
         accelMesure = Util.multiplyMatrices(accel_r_k, accelMesure);
-        double[][] gyroMesure = new double[3][1];
-        gyroMesure[0][0] = gyroX - accel_b[0][0];
-        gyroMesure[1][0] = gyroY - accel_b[1][1];
-        gyroMesure[2][0] = gyroZ - accel_b[2][2];
-        gyroMesure = Util.multiplyMatrices(accel_r_k, gyroMesure);
         return accelMesure;
     }
     

@@ -1,9 +1,17 @@
 package effortMeasurer;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * abstract class to implement if we want to use a different kind of detector
@@ -24,6 +32,8 @@ public abstract class EffortCalculator extends TimerTask {
     private double MAX_REACHED;
     private final int DELAY_BETWEEN_MEASURES;
     private EffortObservable obs;
+    private String pathConfig = "src/main/java/effortMeasurer/CycleEffortConfig.properties";
+    private String MAX_REACHED_NAME_PROPERTY = "MAX_REACHED";
 
     /**
      * constructor build the list of "current measures".
@@ -33,10 +43,18 @@ public abstract class EffortCalculator extends TimerTask {
      */
     public EffortCalculator(double expectedMaxAverage, int lengthDataList, int delayBetweenMeasures) {
         EXPECTED_MAX_AVERAGE = expectedMaxAverage;
-        MAX_REACHED = expectedMaxAverage;
         LENGTH_AVERAGE_LIST = lengthDataList;
         DELAY_BETWEEN_MEASURES = delayBetweenMeasures;
         obs = new EffortObservable();
+        
+        try {
+            FileInputStream input = new FileInputStream(pathConfig);
+            Properties prop = new Properties();
+            prop.load(input);
+            MAX_REACHED = Double.parseDouble(prop.getProperty(MAX_REACHED_NAME_PROPERTY));
+        } catch(IOException ex) {
+            MAX_REACHED = expectedMaxAverage;
+        }
     }
     
     /**
@@ -92,6 +110,31 @@ public abstract class EffortCalculator extends TimerTask {
     
     public void addObserver(Observer o) {
         obs.addObserver(o);
+    }
+    
+    public void stop() {
+        FileOutputStream output =  null;
+        try {
+            File file = new File(pathConfig);
+            output = new FileOutputStream(file, false);
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            output.write((MAX_REACHED_NAME_PROPERTY + "=" + Double.toString(MAX_REACHED)).getBytes());
+            output.flush();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(EffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(EffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                if (output != null) {
+                    output.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
     
     public class EffortObservable extends Observable {

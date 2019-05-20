@@ -15,6 +15,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Observer;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import org.json.simple.parser.ParseException;
@@ -40,32 +41,21 @@ public class Menu  extends JFrame {
         setUndecorated(true);
         
         gameEngine = new GameEngine();
-        CharacterControllerJoycon characterControllerJoycon = new CharacterControllerJoycon(gameEngine.getCharacter(), gameEngine.getCHARACTER_MAX_SPEED());
+        new CharacterControllerJoycon(gameEngine.getCharacter(), gameEngine.getCHARACTER_MAX_SPEED());
         effortCalculator = new IMUCycleEffortCalculator();
         effortCalculator.start();
         gamePanel = new GamePanel(this, gameEngine, effortCalculator);
         gameLoop = new GameLoop(gameEngine, effortCalculator, gamePanel);
         
         menuPanel = new MenuPanel(this);
-        
-        // slider
-        sliderPanel = new JPanel();
-        GridLayout gl = new GridLayout(5, 4);
-        sliderPanel.setLayout(gl);
-        Slider slider = new Slider(0, 20);
-        // add 2 void component to fill the gridlayout and put slider in right position
-        for (int i = 0; i < 16; i++) {
-            sliderPanel.add(new Component(){});
-        }
-        sliderPanel.add(slider);
-        Dimension dim = new Dimension(Toolkit.getDefaultToolkit().getScreenSize().width / 3, Toolkit.getDefaultToolkit().getScreenSize().height);
-        sliderPanel.setPreferredSize(dim);
-        effortCalculator.addObserver(slider);
+        sliderPanel = new SliderPanel(effortCalculator);
+        gameEngine.addScoreObserver((Observer) sliderPanel);
         
         addWindowListener(new WindowAdapter(){
             @Override
             public void windowClosing(WindowEvent e){
                 gameLoop.stop();
+                effortCalculator.stop();
                 System.exit(0);
             }
         });

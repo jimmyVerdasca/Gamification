@@ -42,7 +42,6 @@ public class GamePanel extends JPanel {
     
     private final int WINDOW_CENTER;
     private final int WALL_HEIGHT;
-    private final int WALL_WIDTH = 576;
     private final int MIN_X;
     
     public GamePanel(JFrame window, GameEngine gameEngine, EffortCalculator effortCalculator) throws IOException {
