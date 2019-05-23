@@ -21,8 +21,9 @@ public class DataFileUtil {
         FileWriter fstream = new FileWriter(file, true);
         BufferedWriter out = new BufferedWriter(fstream);
         for (double d : data) {
-            out.write(Double.toString(d) + ";" + Long.toString(index++) + ";\n");
+            out.write(Double.toString(d) + ";");
         }
+        out.write("\n");
         out.close();
     }
     
@@ -30,9 +31,18 @@ public class DataFileUtil {
         File file = new File(fileName);
         FileWriter fstream = new FileWriter(file, true);
         BufferedWriter out = new BufferedWriter(fstream);
-        for (long d : data) {
-            out.write(Long.toString(d) + ";\n");
+        for (double d : data) {
+            out.write(Double.toString(d) + ";");
         }
+        out.write("\n");
+        out.close();
+    }
+    
+    public static void writeToFile(String data, String fileName) throws IOException {
+        File file = new File(fileName);
+        FileWriter fstream = new FileWriter(file, true);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write(data);
         out.close();
     }
     

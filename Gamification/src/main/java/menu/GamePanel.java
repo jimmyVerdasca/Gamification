@@ -5,18 +5,14 @@
  */
 package menu;
 
-import components.Slider;
 import effortMeasurer.EffortCalculator;
 import heigvd.gamification.Background;
 import heigvd.gamification.GameEngine;
 import heigvd.gamification.fallingitems.FallingItem;
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Container;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.IOException;

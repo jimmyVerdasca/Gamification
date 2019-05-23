@@ -9,7 +9,7 @@ import java.io.IOException;
 public class BigRock extends FallingItem {
 
     public BigRock() throws IOException {
-        super("/assets/background/big_rock2.png", 3, 0.1);
+        super("/assets/background/big_rock2.png", "bananaSlap.wav", 3, 0.1);
     }
 
     @Override

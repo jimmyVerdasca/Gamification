@@ -11,7 +11,7 @@ import java.io.IOException;
 public class Rock extends FallingItem {
     
     public Rock() throws IOException {
-        super("/assets/background/big_rock.png", 3, 0.1);
+        super("/assets/background/big_rock.png", "bananaSlap.wav", 3, 0.1);
     }
 
     @Override

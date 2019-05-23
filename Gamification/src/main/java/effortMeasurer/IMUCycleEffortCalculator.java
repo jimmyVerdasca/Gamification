@@ -1,16 +1,16 @@
 package effortMeasurer;
 
 import imu.BluetoothIMUAPI;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Properties;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
+import util.ArrayUtil;
 import static util.ArrayUtil.findIndexOfMaxIn;
+import util.DataFileUtil;
 
 /**
  *
@@ -27,13 +27,21 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
     private boolean running = false;
     
     private final ArrayList<Integer> passingThresholdData;
+    private final ArrayList<Double> frequences;
+    private ArrayList<Double> sortedFrequences;
     
     private int currentAxe = 1;
+    private boolean enoughData = false;
     private boolean isUpTreshold = false;
-    private final double TRESHOLD = 18;
+    private boolean isDownTreshold = false;
+    private double maxTreshold;
+    private double minTreshold;
+    private double max;
+    private double min;
+    private final double deltaError = 0.35;
     
     public IMUCycleEffortCalculator() throws IOException, FileNotFoundException, ParseException {
-        super(0.00000001, 100, 0);
+        super(0.0000000425, 100, 0);
         imu = new BluetoothIMUAPI();
         imu.configure();
         accelerationMeasures = new double[getLENGTH_AVERAGE_LIST()];
@@ -42,6 +50,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
             accelerationMeasures[i] = getEXPECTED_MAX_AVERAGE() / 2;
         }
         passingThresholdData = new ArrayList<>(getLENGTH_AVERAGE_LIST() / 2);
+        frequences = new ArrayList<>(getLENGTH_AVERAGE_LIST() / 2);
     }
     
     /**
@@ -94,17 +103,42 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
     /**
      * infinite loop that update the effort of the super class by 
      * 1) asking a new value to the IMU
-     * 2) updating the state of this class (nbCycle and frequence)
+     * 2) updating the state of this class (nbCycle, thresholds and frequence)
      * 3) calculating the effort and setting it
      */
     @Override
     public void run() {
         long time = System.nanoTime();
         long time2;
+        double newValue;
+        double tempo = 1.0;
+        String fileName = "camilo1Tapis85k.txt";
+        double[] fileLine = new double[10];
+        fileLine[6] = 18;
+        try {
+            DataFileUtil.writeToFile("acceleration;ThresholdUP;max;ThresholdDown;min;bufferTempo;minimumAmplitude;currentAmplitude;nbCycle;freq", fileName);
+        } catch (IOException ex) {
+            Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        }
         while (running) {
             try {
                 // TODO fixer le timestamp reçu par imu et remplacer System.nanoTime() par pair.getValue();
-                addValue(imu.registerDatasIncoming()[currentAxe][0], System.nanoTime());
+                newValue = imu.registerDatasIncoming()[currentAxe][0];
+                addValue(newValue, System.nanoTime());
+                fileLine[0] = newValue;
+                fileLine[1] = maxTreshold;
+                fileLine[2] = max;
+                fileLine[3] = minTreshold;
+                fileLine[4] = min;
+                if (currentIndex == 0) {
+                    tempo *= -1;
+                }
+                fileLine[5] = tempo;
+                fileLine[7] = (max - min);
+                fileLine[8] = getNbCycle();
+                fileLine[9] = getFrequence();
+                DataFileUtil.writeToFile(fileLine, fileName);
+                System.out.println("freq " + getFrequence());
                 setEffort(getFrequence() / getEXPECTED_MAX_AVERAGE());
                 Thread.yield();
             } catch (IOException ex) {
@@ -117,12 +151,28 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      * update the frequence value and recalculate the number of cycle before
      */
     private double getFrequence() {
-        // calcul the frequence (only if array timeMeasure has been filled once)
-        if (passingThresholdData.size() > 1) {
-            return ((double)getNbCycle()) / (timeMeasure[passingThresholdData.get(passingThresholdData.size() - 1)] - timeMeasure[passingThresholdData.get(0)]);
+        // calcul the frequence we fond atleast two frequence
+        if (passingThresholdData.size() > 3) {
+            // then we calculate the median of these frequences
+            return medianFrequence();
         } else {
             return 0;
         }
+    }
+    
+    /**
+     * return the mid element -1 of the frequences array
+     * or 0 if there is less than 2 element
+     * 
+     * @return the mid element -1 of the frequences array
+     */
+    private double medianFrequence() {
+        if(frequences.size() < 2) {
+            return 0.0;
+        }
+        sortedFrequences = new ArrayList<>(frequences);
+        Collections.sort(sortedFrequences);
+        return sortedFrequences.get(frequences.size() / 2 - 1);
     }
     
     private int getNbCycle() {
@@ -138,18 +188,39 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         // if the index that we will erase is in the arraylist, we remove it
         if(passingThresholdData.size() > 0 && passingThresholdData.get(0) == currentIndex) {
             passingThresholdData.remove(0);
+            try {
+                frequences.remove(0);
+            } catch(IndexOutOfBoundsException ex) {
+                
+            }
         }
-        
+
+        updateThresholds();
+
         // if the new value pass the threshold we add the index at the end of the arrayList
-        if (!isUpTreshold && Math.abs(newValue) > TRESHOLD) {
-            passingThresholdData.add(currentIndex);
-            isUpTreshold = true;
-        } else if (Math.abs(newValue) < TRESHOLD) {
-            isUpTreshold = false;
+        if (max - min > 18) {
+            if (!isUpTreshold && newValue > maxTreshold) {
+                if (passingThresholdData.size() > 1) {
+                    frequences.add(((double)getNbCycle()) / (timestamp - timeMeasure[passingThresholdData.get(passingThresholdData.size() - 1)]));
+                }
+                passingThresholdData.add(currentIndex);
+                isUpTreshold = true;
+                isDownTreshold = false;
+            } else if (!isDownTreshold && newValue < minTreshold) {
+                isUpTreshold = false;
+                isDownTreshold = true;
+            }
         }
         
         timeMeasure[currentIndex] = timestamp;
         accelerationMeasures[currentIndex] = newValue;
         currentIndex = (currentIndex + 1) % accelerationMeasures.length;
+    }
+
+    private void updateThresholds() {
+        max = ArrayUtil.findMax(accelerationMeasures);
+        min = ArrayUtil.findMin(accelerationMeasures);
+        maxTreshold = max - deltaError * (max - min);
+        minTreshold = min + deltaError * (max - min);
     }
 }

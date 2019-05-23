@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.Properties;
-import javafx.util.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -82,7 +81,7 @@ public final class BluetoothIMUAPI {
         imuHandler.sendMessage(new byte[]{(byte)0x49, (byte)0x01,}, ACQUITTEMENT);
         //Setting Shimmer sampling rate to 51.2Hz
         System.out.println("configure4");
-        imuHandler.sendMessage(new byte[]{(byte)0x05, (byte)0x80, (byte)0x02}, ACQUITTEMENT);
+        imuHandler.sendMessage(new byte[]{(byte)0x05, (byte)256, (byte)0x02}, ACQUITTEMENT);
     }
     
     /**

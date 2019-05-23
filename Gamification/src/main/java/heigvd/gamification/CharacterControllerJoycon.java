@@ -11,10 +11,8 @@ import joyconController.JoyconListener;
  *
  * @author jimmy
  */
-public class CharacterControllerJoycon {
+public class CharacterControllerJoycon extends AbstractCharacterController {
 
-    private final Character character;
-    private final int MAX_MOVE_SPEED;
     private final double MAX_POSSIBLE_ACCEL = 2.25;
     private final double[] movement = new double[100];
     private int index = 0;
@@ -22,8 +20,7 @@ public class CharacterControllerJoycon {
     private boolean isUPPressed = false;
     
     public CharacterControllerJoycon(Character character, int characterMaxSpeed) {
-        this.character = character;
-        MAX_MOVE_SPEED = characterMaxSpeed;
+        super(character, characterMaxSpeed);
         for (int i = 0; i < movement.length; i++) {
             movement[i] = 0;
         }
@@ -62,15 +59,6 @@ public class CharacterControllerJoycon {
             total += s;
         }
         return -(total / index) / MAX_POSSIBLE_ACCEL;
-    }
-    
-    private void setSpeed(double evaluation) {
-        if(evaluation > 1) {
-            evaluation = 1;
-        } else if (evaluation < -1) {
-            evaluation = -1;
-        }
-        character.setSpeed((int)(MAX_MOVE_SPEED * evaluation));
     }
     
     private void addEntryAccel(double[] accel) {

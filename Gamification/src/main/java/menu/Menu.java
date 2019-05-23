@@ -1,16 +1,13 @@
 package menu;
 
-import components.Slider;
+import Program.AbstractProgram;
+import Program.TimeProgram;
 import effortMeasurer.EffortCalculator;
 import effortMeasurer.IMUCycleEffortCalculator;
 import heigvd.gamification.CharacterControllerJoycon;
 import heigvd.gamification.GameEngine;
 import heigvd.gamification.GameLoop;
 import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileNotFoundException;
@@ -44,8 +41,9 @@ public class Menu  extends JFrame {
         new CharacterControllerJoycon(gameEngine.getCharacter(), gameEngine.getCHARACTER_MAX_SPEED());
         effortCalculator = new IMUCycleEffortCalculator();
         effortCalculator.start();
+        AbstractProgram program = new TimeProgram(60 * 10); //10 minutes avant le fin du jeu
         gamePanel = new GamePanel(this, gameEngine, effortCalculator);
-        gameLoop = new GameLoop(gameEngine, effortCalculator, gamePanel);
+        gameLoop = new GameLoop(gameEngine, effortCalculator, gamePanel, program);
         
         menuPanel = new MenuPanel(this);
         sliderPanel = new SliderPanel(effortCalculator);
@@ -54,19 +52,24 @@ public class Menu  extends JFrame {
         addWindowListener(new WindowAdapter(){
             @Override
             public void windowClosing(WindowEvent e){
-                gameLoop.stop();
-                effortCalculator.stop();
-                System.exit(0);
+                quit();
             }
         });
     }
     
     public void play(JFrame window) throws IOException {
         window.getContentPane().removeAll();
+        window.setLayout(new BorderLayout());
         window.getContentPane().add(gamePanel, BorderLayout.CENTER);
         window.getContentPane().add(sliderPanel, BorderLayout.EAST);
         validate();
         gameLoop.runGameLoop();
+    }
+    
+    public void quit() {
+        gameLoop.stop();
+        effortCalculator.stop();
+        System.exit(0);
     }
     
     /**

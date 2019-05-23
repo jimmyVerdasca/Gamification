@@ -1,15 +1,23 @@
 package heigvd.gamification;
 
+import Program.AbstractProgram;
 import effortMeasurer.EffortCalculator;
 import java.io.IOException;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import menu.GamePanel;
+import sound.SoundPlayer;
 
 /**
  * Game loop with position prediction from current speed
  * It allows items of the game to be displayed smoothly
  */
-public final class GameLoop
+public final class GameLoop implements Observer
 {
     
     private final GameEngine gameEngine;
@@ -31,6 +39,8 @@ public final class GameLoop
     final double TARGET_FPS = 60;
     final double TARGET_TIME_BETWEEN_RENDERS = ONE_NS / TARGET_FPS;
     private final GamePanel gamePanel;
+    private final AbstractProgram program;
+    private SoundPlayer soundPlayer;
     
     /**
      * constructor launching the game view,
@@ -38,13 +48,21 @@ public final class GameLoop
      * @param gameEngine
      * @param effortCalculator
      * @param gamePanel
+     * @param program
      * @throws java.io.IOException If we can't load the slider image
      */
-    public GameLoop(GameEngine gameEngine, EffortCalculator effortCalculator, GamePanel gamePanel) throws IOException
+    public GameLoop(GameEngine gameEngine, EffortCalculator effortCalculator, GamePanel gamePanel, AbstractProgram program) throws IOException
     {
         this.gameEngine = gameEngine;
         this.effortCalculator = effortCalculator;
         this.gamePanel = gamePanel;
+        this.program = program;
+        program.addObserver(this);
+        try {
+            soundPlayer = new SoundPlayer();
+        } catch (LineUnavailableException ex) {
+            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     //Starts a new thread and runs the game loop in it.
@@ -61,6 +79,16 @@ public final class GameLoop
         };
         loop.setPriority(10);
         loop.start();
+        try {
+            soundPlayer.playSound("motivational.wav", true);
+        } catch (UnsupportedAudioFileException ex) {
+            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (LineUnavailableException ex) {
+            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        program.startProgram();
     }
     
     //Only run this in another Thread!
@@ -170,5 +198,12 @@ public final class GameLoop
 
     public void stop() {
         running = false;
+    }
+
+    @Override
+    public void update(Observable o, Object o1) {
+        if(!program.getIsRunning()) {
+            stop();
+        }
     }
 }

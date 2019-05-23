@@ -14,15 +14,17 @@ public abstract class FallingItem extends WallObject {
     private double acceleration;
     private double speed = 0;
     private final boolean IS_NEGATIVE;
+    private final String soundPath;
     
-    public FallingItem(String imagePath, int x, double acceleration) throws IOException {
-        this(imagePath, x, acceleration, true);
+    public FallingItem(String imagePath, String soundPath, int x, double acceleration) throws IOException {
+        this(imagePath, soundPath, x, acceleration, true);
     }
     
-    public FallingItem(String imagePath, int x, double acceleration, boolean isNegative) throws IOException {
+    public FallingItem(String imagePath, String soundPath, int x, double acceleration, boolean isNegative) throws IOException {
         super(imagePath, x, -150); // all falling item appears at top => -150
         this.acceleration = acceleration;
         this.IS_NEGATIVE = isNegative;
+        this.soundPath = soundPath;
     }
     
     public boolean getIS_NEGATIVE() {
@@ -64,6 +66,8 @@ public abstract class FallingItem extends WallObject {
         return acceleration;
     }
     
-    
+    public String getSoundPath() {
+        return soundPath;
+    }
     
 }

@@ -6,7 +6,6 @@ import heigvd.gamification.fallingitems.FallingItem;
 import heigvd.gamification.fallingitems.LittleRock;
 import heigvd.gamification.fallingitems.Rock;
 import heigvd.gamification.fallingitems.Shield;
-import java.awt.Toolkit;
 import java.io.IOException;
 import java.util.Observable;
 import java.util.Observer;
@@ -14,6 +13,9 @@ import java.util.Random;
 import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import sound.SoundPlayer;
 
 /**
  * class containing the game logic
@@ -36,6 +38,8 @@ public class GameEngine {
         Bonus.class,
         Shield.class
     };
+    
+    private SoundPlayer soundPlayer;
     
     //Current wallspeed
     private int speed = 0;
@@ -63,6 +67,11 @@ public class GameEngine {
      */
     public GameEngine() {
         super();
+        try {
+            soundPlayer = new SoundPlayer();
+        } catch (LineUnavailableException ex) {
+            Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
+        }
         maxCurrentSpeed = MAX_SPEED;
         try {
             backOne = new Background();
@@ -236,6 +245,17 @@ public class GameEngine {
                     deactivateShield();
                 }
             } ,7000);
+        }
+        if (obstacle.getIS_NEGATIVE() && obstacle.getSoundPath() != null) {
+            try {
+                soundPlayer.playSound(obstacle.getSoundPath(), false);
+            } catch (UnsupportedAudioFileException ex) {
+                Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (LineUnavailableException ex) {
+                Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
