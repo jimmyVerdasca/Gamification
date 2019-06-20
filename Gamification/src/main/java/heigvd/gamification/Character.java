@@ -7,8 +7,8 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 /**
- * class representing the modele of the character in game
- *
+ * * Class that modelize a character of the game.
+ * 
  * @author jimmy
  */
 public class Character extends WallObject {

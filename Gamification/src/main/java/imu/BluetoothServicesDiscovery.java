@@ -22,9 +22,24 @@ import javax.bluetooth.UUID;
  */
 public class BluetoothServicesDiscovery implements DiscoveryListener {
 
+    /**
+     * Object containing our Bluetooth hardware informations.
+     */
     LocalDevice localDevice;
+    
+    /**
+     * agent used to launch a discovery
+     */
     DiscoveryAgent agent;
+    
+    /**
+     * Set of device discovered
+     */
     Set<RemoteDevice> devicesFound;
+    
+    /**
+     * Set of service discovered
+     */
     Set<String> servicesURL;
     
     /**

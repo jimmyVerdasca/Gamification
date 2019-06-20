@@ -19,39 +19,84 @@ import sound.SoundPlayer;
  */
 public final class GameLoop implements Observer
 {
-    
+    /**
+     * GameEngine to update the state of the game.
+     */
     private final GameEngine gameEngine;
+    
+    /**
+     * Detector to receive input from the player.
+     */
     private final EffortCalculator effortCalculator;
+    
+    /**
+     * Current state of the loop.
+     */
     private boolean running = false;
     
-    //Number of time the monitor refresh in one second
+    /**
+     * Number of time the monitor refresh in one second.
+     */
     final double GAME_HERTZ = 30.0;
+    
+    /**
+     * number of ns in a second.
+     */
     final int ONE_NS = 1000000000;
 
-    //Calculate how many ns each frame should take for our target game hertz.
+    /**
+     * Calculate how many ns each frame should take for our target game hertz.
+     */
     final double TIME_BETWEEN_UPDATES = ONE_NS / GAME_HERTZ;
 
-    //At the very most we will update the game this many times before a new render.
-    //If you're worried about visual hitches more than perfect timing, set this to 1.
+    /**
+     * At the very most we will update the game this many times before a new
+     * render.
+     * If you're worried about visual hitches more than perfect timing, set this
+     * to 1.
+     */
     final int MAX_UPDATES_BEFORE_RENDER = 1;
 
-    //If we are able to get as high as this FPS, don't render again.
+    /**
+     * If we are able to get as high as this FPS, don't render again.
+     */
     final double TARGET_FPS = 60;
+    
+    /**
+     * Time expected between each render.
+     */
     final double TARGET_TIME_BETWEEN_RENDERS = ONE_NS / TARGET_FPS;
+    
+    /**
+     * View of the game, where we display the game state.
+     */
     private final GamePanel gamePanel;
+    
+    /**
+     * Input class where we receive the end of the game.
+     */
     private final AbstractProgram program;
+    
+    /**
+     * Musique player to start when we start the game.
+     */
     private SoundPlayer soundPlayer;
     
     /**
      * constructor launching the game view,
-     * the game modeles and the effort calculator
-     * @param gameEngine
-     * @param effortCalculator
-     * @param gamePanel
-     * @param program
+     * the game modeles and the effort calculator.
+     * 
+     * @param gameEngine GameEngine to update the state of the game.
+     * @param effortCalculator Detector to receive the effort of the player.
+     * @param gamePanel View of the game, where we display the game state.
+     * @param program Type of workout to receive the end input.
      * @throws java.io.IOException If we can't load the slider image
      */
-    public GameLoop(GameEngine gameEngine, EffortCalculator effortCalculator, GamePanel gamePanel, AbstractProgram program) throws IOException
+    public GameLoop(
+            GameEngine gameEngine,
+            EffortCalculator effortCalculator,
+            GamePanel gamePanel,
+            AbstractProgram program) throws IOException
     {
         this.gameEngine = gameEngine;
         this.effortCalculator = effortCalculator;
@@ -196,10 +241,20 @@ public final class GameLoop implements Observer
     
     
 
+    /**
+     * Quit properly the GameLoop.
+     */
     public void stop() {
         running = false;
     }
 
+    /**
+     * Reaction if the program send the input "end of workout".
+     * We quit the GameLoop.
+     * 
+     * @param o instance sending the event
+     * @param o1 param relative to the event sent
+     */
     @Override
     public void update(Observable o, Object o1) {
         if(!program.getIsRunning()) {

@@ -11,19 +11,43 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
 
 /**
- * Handler of one bluetooth service
+ * Handler of one bluetooth device/service
  * 
  * @author jimmy
  */
 public class BluetoothPairing {
     
+    /**
+     * name of the device handled
+     */
     private final String name;
     
-    private DataOutputStream dataOut;
-    private DataInputStream dataIn;
-    private StreamConnection clientStream;
-    private final BluetoothServicesDiscovery bluetoothDiscovery = new BluetoothServicesDiscovery();
+    /**
+     * Service uuid that we will communicate with.
+     */
     private final UUID uuid;
+    
+    /**
+     * Output stream pc to device.
+     */
+    private DataOutputStream dataOut;
+    
+    /**
+     * Input stream device to pc.
+     */
+    private DataInputStream dataIn;
+    
+    /**
+     * Connection where we get the streams.
+     */
+    private StreamConnection clientStream;
+    
+    /**
+     * Class handling service/device discovery.
+     */
+    private final BluetoothServicesDiscovery bluetoothDiscovery =
+            new BluetoothServicesDiscovery();
+    
 
     /**
      * constructor using the bluetooth service discovery to get the streams with
@@ -84,11 +108,12 @@ public class BluetoothPairing {
     }
     
     /**
-     *send a message that expect an acquittement
+     * Send a message that expect an acquittement.
      * 
-     * @param data
-     * @param acquittement
-     * @throws java.io.IOException
+     * @param data buffer to send
+     * @param acquittement expected aquittement to receive as response by the
+     *                     Bluetooth device.
+     * @throws java.io.IOException If an error occur while sending the packet.
      */
     public void sendMessage(byte[] data, byte acquittement) throws IOException {
         sendMessage(data);
@@ -96,7 +121,7 @@ public class BluetoothPairing {
     }
     
     /**
-     * send a message
+     * send a message with 0 controls.
      * 
      * @param data bytes to send
      * @throws java.io.IOException if fails to send
@@ -106,7 +131,7 @@ public class BluetoothPairing {
     }
     
     /**
-     * loop reading the inputStream until we read the expexted acquittement
+     * loop reading the inputStream until we read the expected acquittement
      * 
      * @param acquittementExpected value of the acquittement expected
      */

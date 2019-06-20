@@ -6,7 +6,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.LinkedList;
 import java.util.Properties;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -21,27 +20,86 @@ import org.json.simple.parser.ParseException;
  * @author jimmy
  */
 public final class BluetoothIMUAPI {
+    
+    /**
+     * Handler to send packet by Bluetooth to a given service/device.
+     */
     BluetoothPairing imuHandler;
     
+    /**
+     * Value sent by the Shimmer3 when she received a good "command"
+     */
     private final byte ACQUITTEMENT = (byte) 0xff;
+    
+    /**
+     * Value to send to ask beginning the motion capture.
+     */
     private final byte START_CAPTURE = (byte) 0x07;
+    
+    /**
+     * Value to send to ask stopping the motion capture.
+     */
     private final byte STOP_CAPTURE = (byte) 0x20;
-    // 1byte packet type + 3byte timestamp + 3x2byte Analog Accel + 3x2byte MPU9150 gyro
+    
+    /**
+     * 1byte packet type + 3byte timestamp + 3x2byte Analog Accel + 3x2byte MPU9150 gyro
+     */
     private final int FRAME_SIZE = 16;
     
-    private final LinkedList<Integer> datasRegistre;
+    /**
+     * array 3x3 with bias calibration for accelerations
+     */
     private double[][] accel_b;
+    
+    /**
+     * array 3x3 with calibration for accelerations
+     */
     private double[][] accel_k;
+    
+    /**
+     * array 3x3 with rotation calibration for 
+     */
     private double[][] accel_r;
+    
+    /**
+     * array 3x3 with bias calibration for gyroscope
+     */
     private double[][] gyro_b;
+    
+    
+    /**
+     * array 3x3 with calibration for gyroscope
+     */
     private double[][] gyro_k;
+    
+    /**
+     * array 3x3 with rotation calibration for gyroscope
+     */
     private double[][] gyro_r;
     
+    /**
+     * result calibration matrice for acceleration
+     */
     private double[][] accel_r_k;
+    
+    /**
+     * result calibration matrice for gyroscope
+     */
     private double[][] gyro_r_k;
     
+    /**
+     * Buffer to prepare commands to send to the Shimmer3 accelerometer.
+     */
     private byte[] buffer;
+    
+    /**
+     * Result accelerations measure considering the calibration.
+     */
     private double[][] accelMesure = new double[3][1];
+    
+    /**
+     * Byte manipulator to ease the commands constructions.
+     */
     private ByteBuffer bb = ByteBuffer.allocate(2);
 
     /**
@@ -53,7 +111,6 @@ public final class BluetoothIMUAPI {
      * @throws ParseException if the file is missbuilded
      */
     public BluetoothIMUAPI() throws FileNotFoundException, IOException, ParseException {
-        this.datasRegistre = new LinkedList<>();
         FileInputStream input = new FileInputStream("src/main/java/imu/IMUConfig.properties");
 	Properties prop = new Properties();
         prop.load(input);

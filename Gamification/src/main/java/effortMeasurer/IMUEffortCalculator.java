@@ -6,41 +6,53 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
 /**
- * Class using the Inertial Movement Unit
- * to detect the acceleration and calcul the effort
+ * Naïv implementation of the EffortCalculator that
+ * detects accelerations with a Shimmer3 accelerometer.
+ * 
+ * The effort is the average acceleration from the x last acceleration sent by
+ * the Shimmer3 accelerometer.
  * 
  * @author jimmy
  */
 public class IMUEffortCalculator extends EffortCalculator {
 
+    /**
+     * Shimmer3 accelerometer handler
+     */
     private final BluetoothIMUAPI imu;
-    private final Object lock = new Object();
-    private final LinkedList<Double> speedAverage;
     
     /**
+     * circular buffer containing the acceleration of the sportsman
+     */
+    private final LinkedList<Double> accList;
+    
+    /**
+     * constructor
      * 
-     * @throws IOException
-     * @throws FileNotFoundException
-     * @throws ParseException 
+     * @throws IOException If we can't reach the Shimmer3 accelerometer.
+     * @throws FileNotFoundException If the Shimmer3 API has not found the
+     *                               calibration file.
+     * @throws ParseException If there is an parsing error in the calibration
+     *                        file.
      */
     public IMUEffortCalculator() 
             throws IOException, FileNotFoundException, ParseException {
-        super(25, 100, 10);
+        super(25, 100);
         imu = new BluetoothIMUAPI();
         imu.configure();
         imu.startCapture();
-        speedAverage = new LinkedList();
+        accList = new LinkedList();
         for (int i = 0; i < getLENGTH_AVERAGE_LIST(); i++) {
-            speedAverage.add(0.0);
+            accList.add(0.0);
         }
     }
 
     /**
-     * Add a 0 entry in the measure list of the parent.
+     * Read datas incoming from the IMU and update the effort in the
+     * super-class.
      */
     @Override
     public void run() {
@@ -49,19 +61,16 @@ public class IMUEffortCalculator extends EffortCalculator {
         try {
             pair = imu.registerDatasIncoming();
             newValue = pair[0][0] + pair[1][0] + pair[2][0];
-            synchronized(lock) {
-                speedAverage.remove();
-                speedAverage.add(Math.abs(newValue));
-            }
+            accList.remove();
+            accList.add(Math.abs(newValue));
         } catch (IOException ex) {
-            Logger.getLogger(IMUEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IMUEffortCalculator.class.getName())
+                    .log(Level.SEVERE, null, ex);
         }
         
         double average = 0;
-        synchronized(lock) {
-            for (double speed : speedAverage) {
-                average += speed;
-            }
+        for (double speed : accList) {
+            average += speed;
         }
         setEffort((average / getLENGTH_AVERAGE_LIST()) / getEXPECTED_MAX_AVERAGE());
     }

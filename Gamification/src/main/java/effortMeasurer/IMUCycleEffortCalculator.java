@@ -13,35 +13,160 @@ import static util.ArrayUtil.findIndexOfMaxIn;
 import util.DataFileUtil;
 
 /**
- *
+ * Implementation of the EffortCalculator that
+ * detects frequence with a Shimmer3 accelerometer.
+ * 
+ * It use a double Threashold strategy.
+ * The maximum and the minimum are median to avoid
+ * extreme wrong measures to break the system.
+ * The threasholds are dynamics to adapt to amplitude changes.
+ * A system of prediction of the next period are implemented to speed up
+ * the reaction of the thresholds.
+ * 
+ * Several mapping function are implemented between frequence and
+ * effort (linear/ 1/e etc).
+ * 
  * @author jimmy
  */
 public class IMUCycleEffortCalculator extends EffortCalculator {
 
+    /**
+     * Shimmer3 accelerometer handler
+     */
     private final BluetoothIMUAPI imu;
     
+    /**
+     * axe used by the shimmer (0,1 or 2)
+     */
+    private int currentAxe = 1;
+    
+    /**
+     * circular array that store acceleration measures
+     */
     private final double[] accelerationMeasures;
+    
+    /**
+     * circular array that store timestamp of the accelerations measures
+     */
     private final long[] timeMeasure;
+    
+    /**
+     * next index of the circulars arrays
+     */
     private int currentIndex = 0;
     
+    /**
+     * parameter to indicate the start and stop of the capture
+     */
     private boolean running = false;
     
+    /**
+     * List that memorize the indexes of the firsts datas passing the thresholds
+     * up after that a data passed the threshold down.
+     * (only the ones still contained in the circular buffer)
+     */
     private final ArrayList<Integer> passingThresholdData;
+    
+    /**
+     * list using passingThresholdData and timeMeasure to create a list of
+     * frequences
+     * (only the ones still contained in the circular buffer)
+     */
     private final ArrayList<Double> frequences;
+    
+    /**
+     * copy of frequences that we can sort/manipulate without break the logic
+     */
     private ArrayList<Double> sortedFrequences;
     
-    private int currentAxe = 1;
-    private boolean enoughData = false;
+    /**
+     * true when the last data that exceeded a threshold was the up one
+     */
     private boolean isUpTreshold = false;
+    
+    /**
+     * true when the last data that exceeded a threshold was the down one
+     */
     private boolean isDownTreshold = false;
     private double maxTreshold;
     private double minTreshold;
-    private double max;
-    private double min;
-    private final double deltaError = 0.35;
     
-    public IMUCycleEffortCalculator() throws IOException, FileNotFoundException, ParseException {
-        super(0.0000000425, 100, 0);
+    /**
+     * movement with less than MIN_AMPLITUDE are considered as noise
+     */
+    private final int MIN_AMPLITUDE = 18;
+    
+    /**
+     * max value contained in accelerationMeasures (8th median value)
+     */
+    private double max;
+    
+    /**
+     * min value contained in accelerationMeasures (8th median value)
+     */
+    private double min;
+    
+    /**
+     * minimum percent between max and his threashold or min and his threshold,
+     * when everything goes well (we detecte cycles).
+     */
+    private final double INIT_DELTA_ERROR = 0.05;
+    
+    /**
+     * current percent between max and his threshold or min and his threshold.
+     * The calcul is for minThreshold for example :
+     * (max - min) * deltaError + min
+     * 
+     * If we don't detect cycles when we expect one to come, deltaError increase slowly,
+     * else we move towards INIT_DELTA_ERROR
+     */
+    private double deltaError;
+    
+    /**
+     * temp variable for passingThresholdData[last]
+     */
+    private int firstIndexNotFoundThreshold;
+    
+    /**
+     * Value used to invalidate/restart the prediction logic variables
+     */
+    private final int INVALID_FIRST_NOT_FOUND = -1;
+    
+    /**
+     * memorize the index when the prediction was wrong.
+     * So thagt we know that the deltaError should grow.
+     * If the prediction is true or we detect a new data passing the threshold,
+     * this variable is set to INVYLID_FIRST_NOT_FOUND
+     */
+    private int deltaErrorLesser = -1;
+    
+    /**
+     * Number of data that haven't passed any threshold since last one.
+     */
+    private int passingThresholdCounter = 0;
+    
+    /**
+     * distance between passingThresholdData[last] and
+     * passingThresholdData[last - 1]
+     * Could be more precise to use timestamp for this functionnality
+     */
+    private int lengthBeforeNextExpectedThresholdPass;
+    
+    /**
+     * constructor
+     * 
+     * @throws IOException If we can't reach the Shimmer3 accelerometer.
+     * @throws FileNotFoundException If the Shimmer3 API has not found the
+     *                               calibration file.
+     * @throws ParseException If there is an parsing error in the calibration
+     *                        file.
+     */
+    public IMUCycleEffortCalculator()
+            throws IOException,
+                   FileNotFoundException,
+                   ParseException {
+        super(0.000000006, 200);
+        
         imu = new BluetoothIMUAPI();
         imu.configure();
         accelerationMeasures = new double[getLENGTH_AVERAGE_LIST()];
@@ -51,11 +176,17 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         }
         passingThresholdData = new ArrayList<>(getLENGTH_AVERAGE_LIST() / 2);
         frequences = new ArrayList<>(getLENGTH_AVERAGE_LIST() / 2);
+        deltaError = INIT_DELTA_ERROR;
+        firstIndexNotFoundThreshold = INVALID_FIRST_NOT_FOUND;
+        lengthBeforeNextExpectedThresholdPass = INVALID_FIRST_NOT_FOUND;
     }
     
     /**
      * methode that try to calculate the nbCycle in each axes
      * and return the axe where he found the most cycles.
+     * 
+     * currently never used and never tested. Will be usefull when we want the
+     * device to adapt to the fitness machine at the beginning of a workout.
      */
     public int getBestAxe() {
         int temp = this.currentAxe;
@@ -73,6 +204,9 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         return findIndexOfMaxIn(nbCycleFound);
     }
     
+    /**
+     * add the launch of the accelerometer to the behaviour of the super.start()
+     */
     @Override
     public void start() {
         super.start();
@@ -85,6 +219,10 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         }
     }
     
+    /**
+     * add the interruption of the accelerometer to the behaviour of
+     * the super.stop()
+     */
     @Override
     public void stop() {
         super.stop();
@@ -92,10 +230,16 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         try {
             imu.stopCapture();
         } catch (IOException ex) {
-            Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IMUCycleEffortCalculator.class.getName())
+                    .log(Level.SEVERE, null, ex);
         }
     }
 
+    /**
+     * set the axe used to detect the frequence
+     * 
+     * @param currentAxe the new axe (0, 1 or 2)
+     */
     public void setCurrentAxe(int currentAxe) {
         this.currentAxe = currentAxe;
     }
@@ -138,7 +282,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
                 fileLine[8] = getNbCycle();
                 fileLine[9] = getFrequence();
                 DataFileUtil.writeToFile(fileLine, fileName);
-                System.out.println("freq " + getFrequence());
+                System.out.println(getFrequence());
                 setEffort(getFrequence() / getEXPECTED_MAX_AVERAGE());
                 Thread.yield();
             } catch (IOException ex) {
@@ -148,11 +292,13 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
     }
     
     /**
-     * update the frequence value and recalculate the number of cycle before
+     * calculate the number of cycle and update the frequence value
+     * 
+     * @return the frequence calculated. Or 0 if not enough data.
      */
     private double getFrequence() {
         // calcul the frequence we fond atleast two frequence
-        if (passingThresholdData.size() > 3) {
+        if (passingThresholdData.size() >= 2) {
             // then we calculate the median of these frequences
             return medianFrequence();
         } else {
@@ -164,7 +310,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      * return the mid element -1 of the frequences array
      * or 0 if there is less than 2 element
      * 
-     * @return the mid element -1 of the frequences array
+     * @return the median frequence
      */
     private double medianFrequence() {
         if(frequences.size() < 2) {
@@ -175,17 +321,36 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         return sortedFrequences.get(frequences.size() / 2 - 1);
     }
     
+    /**
+     * Return the mean frequence.
+     * 
+     * @return the mean frequence.
+     */
+    private double meanFrequence() {
+        return getNbCycle() / (timeMeasure[passingThresholdData.get(passingThresholdData.size() - 1)] - timeMeasure[passingThresholdData.get(0)]);
+    }
+    
+    /**
+     * return the number of period detected in the circular buffer.
+     * concretely return the size of passingThresholdData
+     * 
+     * @return the number of cycle currently in the circular buffer.
+     */
     private int getNbCycle() {
         return passingThresholdData.size();
     }
     
     /**
-     * add a new entry to the accelerationMeasure
-     * and put his timestamp in timeMeasure at the same index
+     * add properly a new entry to the accelerationMeasure.
+     * Put his timestamp in timeMeasure at the same index.
+     * 
+     * update the prevision system state
+     * update dynamic thresholds system state
+     * 
      * @param newValue the new value
      */
     private void addValue(double newValue, long timestamp) {
-        // if the index that we will erase is in the arraylist, we remove it
+        // erase if necessary old data (erased by circular buffer)
         if(passingThresholdData.size() > 0 && passingThresholdData.get(0) == currentIndex) {
             passingThresholdData.remove(0);
             try {
@@ -198,28 +363,101 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         updateThresholds();
 
         // if the new value pass the threshold we add the index at the end of the arrayList
-        if (max - min > 18) {
+        // movement with less than MIN_AMPLITUDE are considered as noise
+        if (max - min > MIN_AMPLITUDE) {
             if (!isUpTreshold && newValue > maxTreshold) {
                 if (passingThresholdData.size() > 1) {
                     frequences.add(((double)getNbCycle()) / (timestamp - timeMeasure[passingThresholdData.get(passingThresholdData.size() - 1)]));
                 }
                 passingThresholdData.add(currentIndex);
-                isUpTreshold = true;
-                isDownTreshold = false;
+                passThresholdUP();
             } else if (!isDownTreshold && newValue < minTreshold) {
-                isUpTreshold = false;
-                isDownTreshold = true;
+                passThresholdDOWN();
+            } else if (passingThresholdData.size() > 1) {
+                /** We have not passed the threashold and have enough data to
+                 * use the detection system
+                 */
+                
+                // The first time we doesn't exceed any threshold we store the
+                // index.
+                if(passingThresholdCounter == INVALID_FIRST_NOT_FOUND) {
+                    firstIndexNotFoundThreshold = currentIndex;
+                }
+                
+                // We update prediction system state.
+                passingThresholdCounter++;
+                lengthBeforeNextExpectedThresholdPass = distanceBetweenIndex(passingThresholdData.get(passingThresholdData.size() - 1), passingThresholdData.get(passingThresholdData.size() - 2), accelerationMeasures.length);
+                
+                /** If currentIndex reach the prediction without finding any
+                 * data that exceed the threshold, we update the prediction
+                 * system to start the increase of deltaError.
+                 */
+                if (currentIndex == (firstIndexNotFoundThreshold + lengthBeforeNextExpectedThresholdPass) % accelerationMeasures.length) {
+                    deltaErrorLesser = currentIndex;
+                }
             }
         }
         
         timeMeasure[currentIndex] = timestamp;
         accelerationMeasures[currentIndex] = newValue;
         currentIndex = (currentIndex + 1) % accelerationMeasures.length;
+        
+        /**
+         * Increase or deacrease deltaError depending on the state of the 
+         * prediction system.
+         */
+        if (deltaErrorLesser != INVALID_FIRST_NOT_FOUND) {
+            deltaError += (0.5 - deltaError) / (3 *lengthBeforeNextExpectedThresholdPass);
+        } else if (lengthBeforeNextExpectedThresholdPass != INVALID_FIRST_NOT_FOUND) {
+            deltaError -= (deltaError - INIT_DELTA_ERROR) / (3 * lengthBeforeNextExpectedThresholdPass);
+        }
+    }
+    
+    /**
+     * update the double threshold system to the state that a data exceeded
+     * threshold up
+     * update the prevision system too
+     */
+    private void passThresholdUP() {
+        isUpTreshold = true;
+        isDownTreshold = false;
+        passingThresholdCounter = INVALID_FIRST_NOT_FOUND;
+        deltaErrorLesser = INVALID_FIRST_NOT_FOUND;
+    }
+    
+    /**
+     * update the double threshold system to the state that a data exceeded
+     * threshold down
+     * update the prevision system too
+     */
+    private void passThresholdDOWN() {
+        isUpTreshold = false;
+        isDownTreshold = true;
+        passingThresholdCounter = INVALID_FIRST_NOT_FOUND;
+        deltaErrorLesser = INVALID_FIRST_NOT_FOUND;
+    }
+    
+    /**
+     * Method to ease the calcul of the difference between two index of a
+     * circular buffer. 
+     * 
+     * @param first index of the beginning
+     * @param second index of the end
+     * @param length length of the circular buffer
+     * 
+     * @return the distance between first and second in a circular buffer.
+     */
+    private int distanceBetweenIndex(int first, int second, int length) {
+        return (first - second + length) % length;
     }
 
+    /**
+     * recalculate the max, the min en the threshold.
+     * max and min are the 8th bigger/smaller value in accelerationMeasures.
+     */
     private void updateThresholds() {
-        max = ArrayUtil.findMax(accelerationMeasures);
-        min = ArrayUtil.findMin(accelerationMeasures);
+        max = ArrayUtil.getKLargest(accelerationMeasures.clone(), accelerationMeasures.length, 8);
+        min = ArrayUtil.getKSmallest(accelerationMeasures.clone(), accelerationMeasures.length, 8);
         maxTreshold = max - deltaError * (max - min);
         minTreshold = min + deltaError * (max - min);
     }

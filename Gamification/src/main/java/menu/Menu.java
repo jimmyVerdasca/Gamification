@@ -18,7 +18,13 @@ import javax.swing.JPanel;
 import org.json.simple.parser.ParseException;
 
 /**
- *
+ * Main Class instanciating the view/controllers and the logiques entity.
+ * 
+ * It's the entry point from where we can switch between different views.
+ * 
+ * In future versions we should split the view code of the
+ * "workout-game handling" code.
+ * 
  * @author jimmy
  */
 public class Menu  extends JFrame {
@@ -31,6 +37,13 @@ public class Menu  extends JFrame {
     private GameLoop gameLoop;
     private final GamePanel gamePanel;
     
+    /**
+     * constructor
+     * 
+     * @throws IOException should be handled soon
+     * @throws FileNotFoundException should be handled soon
+     * @throws ParseException should be handled soon
+     */
     public Menu() throws IOException, FileNotFoundException, ParseException {
         super();
         
@@ -57,7 +70,12 @@ public class Menu  extends JFrame {
         });
     }
     
-    public void play(JFrame window) throws IOException {
+    /**
+     * Method to call when we want to swith the view to the game mode.
+     * 
+     * @param window instance of Menu that handle the view.
+     */
+    public void play(Menu window) {
         window.getContentPane().removeAll();
         window.setLayout(new BorderLayout());
         window.getContentPane().add(gamePanel, BorderLayout.CENTER);
@@ -66,6 +84,9 @@ public class Menu  extends JFrame {
         gameLoop.runGameLoop();
     }
     
+    /**
+     * Method to call when we want to leave the program properly.
+     */
     public void quit() {
         gameLoop.stop();
         effortCalculator.stop();
@@ -82,7 +103,6 @@ public class Menu  extends JFrame {
      */
     public static void main(String[] args) throws IOException, FileNotFoundException, ParseException
     {
-        //launch the effort calculator
         Menu menu = new Menu();
         menu.setVisible(true);
     }

@@ -4,10 +4,13 @@ import Jama.Matrix;
 import org.json.simple.JSONArray;
 
 /**
- * utilitary class giving access to some json and matrix methodes
+ * utilitary class giving access to some json and matrix methodes to ease the 
+ * IMU handling.
+ * 
  * @author jimmy
  */
 public class Util {
+    
     /**
      * transform a JSONArray to a double java array
      * @param array
@@ -45,6 +48,7 @@ public class Util {
     
     /**
      * transform a simple 1D array to a 2D array with the width and height asked
+     * 
      * @param oneDimensionalArray
      * @param widthWish
      * @param heightWish

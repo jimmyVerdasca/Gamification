@@ -1,16 +1,9 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package menu;
 
 import effortMeasurer.EffortCalculator;
 import heigvd.gamification.Background;
 import heigvd.gamification.GameEngine;
 import heigvd.gamification.fallingitems.FallingItem;
-import java.awt.BorderLayout;
-import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
@@ -20,7 +13,8 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 /**
- *
+ * Panel where is drawn the game state (Background, falling items, character)
+ * 
  * @author jimmy
  */
 public class GamePanel extends JPanel {

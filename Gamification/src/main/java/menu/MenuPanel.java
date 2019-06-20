@@ -1,27 +1,34 @@
 package menu;
 
-import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javafx.scene.layout.Border;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
 /**
- *
+ * Class that represent the view when we are in the menu. 
+ * Final buttons expected :
+ * 
+ * Play solo
+ * Play Cooperative
+ * Play Competitive
+ * Options
+ * Quit
+ * 
  * @author jimmy
  */
 public class MenuPanel extends JPanel {
 
+    /**
+     * Constructor
+     * Build the menu buttons spaced vertically
+     * 
+     * @param menu instance of JFrame that called this instance (parent)
+     */
     public MenuPanel(Menu menu) {
         
         Container cp = menu.getContentPane();
@@ -51,11 +58,7 @@ public class MenuPanel extends JPanel {
         add(Box.createRigidArea(new Dimension(0, vSpace)));
         
         buttonPlay.addActionListener((ActionEvent e) -> {
-            try { 
-                menu.play(menu);
-            } catch (IOException ex) {
-                Logger.getLogger(MenuPanel.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            menu.play(menu);
         });
         
         buttonQuit.addActionListener((ActionEvent e) -> {
@@ -64,6 +67,12 @@ public class MenuPanel extends JPanel {
         cp.add(this);
     }
     
+    /**
+     * Ease to add buttons just by giving his text.
+     * 
+     * @param text of the button to add
+     * @return the new JButton created.
+     */
     private JButton addButton(String text) {
         JButton button = new JButton(text){
             {

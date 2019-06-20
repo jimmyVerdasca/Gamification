@@ -2,7 +2,8 @@ package heigvd.gamification;
 
 import java.io.IOException;
 /**
- *
+ * Class that modelize an image of the background.
+ * 
  * @author jimmy
  */
 public class Background extends WallObject {
