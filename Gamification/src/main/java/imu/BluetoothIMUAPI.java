@@ -7,10 +7,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import util.DataFileUtil;
 
 /**
  * This class reads the IMUConfig to search a particular IMU
@@ -132,13 +135,13 @@ public final class BluetoothIMUAPI {
         imuHandler.sendMessage(new byte[]{(byte)0x08, (byte)0x40, (byte)0x10, (byte)0x00}, ACQUITTEMENT);
         //Setting accel range to 4g
         System.out.println("configure2");
-        imuHandler.sendMessage(new byte[]{(byte)0x09, (byte)0x01,}, ACQUITTEMENT);
+        imuHandler.sendMessage(new byte[]{(byte)0x09, (byte)0x01}, ACQUITTEMENT);
         //Setting gyro range to 500dps
         System.out.println("configure3");
-        imuHandler.sendMessage(new byte[]{(byte)0x49, (byte)0x01,}, ACQUITTEMENT);
+        imuHandler.sendMessage(new byte[]{(byte)0x49, (byte)0x01}, ACQUITTEMENT);
         //Setting Shimmer sampling rate to 51.2Hz
         System.out.println("configure4");
-        imuHandler.sendMessage(new byte[]{(byte)0x05, (byte)256, (byte)0x02}, ACQUITTEMENT);
+        imuHandler.sendMessage(new byte[]{(byte)0x05, (byte)0x80, (byte)0x02}, ACQUITTEMENT);
     }
     
     /**
@@ -166,7 +169,7 @@ public final class BluetoothIMUAPI {
      * 
      * @throws IOException if we can't read bytes from the IMU
      */
-    public double[][] registerDatasIncoming() throws IOException {
+    public double[][] registerDataIncoming() throws IOException {
         buffer = imuHandler.readBytes(FRAME_SIZE);
         
         bb.put(buffer[10]);

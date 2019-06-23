@@ -59,7 +59,7 @@ public class IMUEffortCalculator extends EffortCalculator {
         double[][] pair;
         double newValue;
         try {
-            pair = imu.registerDatasIncoming();
+            pair = imu.registerDataIncoming();
             newValue = pair[0][0] + pair[1][0] + pair[2][0];
             accList.remove();
             accList.add(Math.abs(newValue));

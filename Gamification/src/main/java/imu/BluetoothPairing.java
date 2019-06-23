@@ -9,6 +9,7 @@ import javax.bluetooth.RemoteDevice;
 import javax.bluetooth.UUID;
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
+import util.DataFileUtil;
 
 /**
  * Handler of one bluetooth device/service
@@ -156,7 +157,16 @@ public class BluetoothPairing {
      */
     public byte[] readBytes(int nbBytesToRead) throws IOException {
         byte[] datas = new byte[nbBytesToRead];
-        dataIn.read(datas, 0, nbBytesToRead);
+        
+        int bytesReadSoFar = 0;
+        
+        while (bytesReadSoFar < nbBytesToRead) {
+            byte[] dataTemp =  new byte[nbBytesToRead - bytesReadSoFar];
+            int tempBytesReadSoFar = dataIn.read(dataTemp, 0, nbBytesToRead - bytesReadSoFar);
+            System.arraycopy(dataTemp, 0, datas, bytesReadSoFar, dataTemp.length);
+            bytesReadSoFar += tempBytesReadSoFar;
+        }
+        //dataIn.read(datas, 0, nbBytesToRead);
         return datas;
     }
 }

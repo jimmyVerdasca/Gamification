@@ -267,7 +267,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         while (running) {
             try {
                 // TODO fixer le timestamp reçu par imu et remplacer System.nanoTime() par pair.getValue();
-                newValue = imu.registerDatasIncoming()[currentAxe][0];
+                newValue = imu.registerDataIncoming()[currentAxe][0];
                 addValue(newValue, System.nanoTime());
                 fileLine[0] = newValue;
                 fileLine[1] = maxTreshold;

@@ -46,7 +46,7 @@ public class BluetoothIMUAPITest {
             System.out.println("capture 100 data");
             int i = 0;
             while(i++ < 100) {
-                imuAPI.registerDatasIncoming();
+                imuAPI.registerDataIncoming();
             }
             System.out.println("stop capture");
             imuAPI.stopCapture();

@@ -78,4 +78,23 @@ public class DataFileUtil {
         out.write(Double.toString(data) + ";\n");
         out.close();
     }
+    
+    public static void writeToFile(byte data, String fileName) throws IOException {
+        File file = new File(fileName);
+        FileWriter fstream = new FileWriter(file, true);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write(Byte.toString(data) + ";\n");
+        out.close();
+    }
+    
+    public static void writeToFile(byte[] data, String fileName) throws IOException {
+        File file = new File(fileName);
+        FileWriter fstream = new FileWriter(file, true);
+        BufferedWriter out = new BufferedWriter(fstream);
+        for (byte d : data) {
+            out.write(Byte.toString(d) + ";");
+        }
+        out.write("\n");
+        out.close();
+    }
 }
