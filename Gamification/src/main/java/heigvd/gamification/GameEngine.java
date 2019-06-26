@@ -142,23 +142,23 @@ public class GameEngine {
      */
     private ScoreObservable obs;
     
+    
+    private Mode currentMode;
+    
     /**
      * constructor of the game
      * create the wall and the character. Plus a new thread to force
      * maxCurrentSpeed to permanently approche MAX_SPEED.
      */
-    public GameEngine() {
+    public GameEngine(Mode firstMode) {
         super();
-        try {
-            soundPlayer = new SoundPlayer();
-        } catch (LineUnavailableException ex) {
-            Logger.getLogger(GameEngine.class.getName())
-                    .log(Level.SEVERE, null, ex);
-        }
+        currentMode = firstMode;
+        soundPlayer = new SoundPlayer();
         maxCurrentSpeed = MAX_SPEED;
+        System.out.println("first mode : " + firstMode.name());
         try {
-            backOne = new Background();
-            backTwo = new Background(0, backOne.getImageHeight());
+            backOne = new Background(0,0, firstMode);
+            backTwo = new Background(0, backOne.getImageHeight(), firstMode);
         } catch (IOException ex) {
             Logger.getLogger(GameEngine.class.getName())
                     .log(Level.SEVERE, null, ex);
@@ -204,8 +204,8 @@ public class GameEngine {
      * and update the score relatively to the increment.
      */
     public void downBackground() {
-        backOne.incrementY(speed);
-        backTwo.incrementY(speed);
+        backOne.incrementY(speed, currentMode);
+        backTwo.incrementY(speed, currentMode);
         incrementScore(speed);
     }
     
@@ -425,6 +425,24 @@ public class GameEngine {
      */
     public Background getBackTwo() {
         return backTwo;
+    }
+    
+    /**
+     * return the current mode we are playing on.
+     * 
+     * @return the current mode we are playing on.
+     */
+    public Mode getMode() {
+        return currentMode;
+    }
+    
+    /**
+     * set a new mode on. The behaviour will change as soon as possible
+     * 
+     * @param newMode the new mode we will play soon
+     */
+    public void setMode(Mode newMode) {
+        currentMode = newMode;
     }
     
     /**

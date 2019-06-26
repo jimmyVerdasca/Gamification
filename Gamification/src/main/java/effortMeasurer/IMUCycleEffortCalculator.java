@@ -94,7 +94,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
     /**
      * movement with less than MIN_AMPLITUDE are considered as noise
      */
-    private final int MIN_AMPLITUDE = 18;
+    private final int MIN_AMPLITUDE = 5;
     
     /**
      * max value contained in accelerationMeasures (8th median value)
@@ -110,7 +110,13 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      * minimum percent between max and his threashold or min and his threshold,
      * when everything goes well (we detecte cycles).
      */
-    private final double INIT_DELTA_ERROR = 0.05;
+    private final double INIT_DELTA_ERROR = 0.15;
+    
+    /**
+     * maximum percent between max and his threashold or min and his threshold,
+     * when we don't detect cycles anymore.
+     */
+    private final double MAX_DELTA_ERROR = 0.495;
     
     /**
      * current percent between max and his threshold or min and his threshold.
@@ -152,6 +158,9 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      */
     private int lengthBeforeNextExpectedThresholdPass;
     
+    private double currentFrequence = 0;
+    private double speedFrequence = 0.08;
+    
     /**
      * constructor
      * 
@@ -165,7 +174,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
             throws IOException,
                    FileNotFoundException,
                    ParseException {
-        super(0.000000006, 200);
+        super(0.003, 300);
         
         imu = new BluetoothIMUAPI();
         imu.configure();
@@ -257,10 +266,10 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         double newValue;
         double tempo = 1.0;
         String fileName = "camilo1Tapis85k.txt";
-        double[] fileLine = new double[10];
+        double[] fileLine = new double[12];
         fileLine[6] = 18;
         try {
-            DataFileUtil.writeToFile("acceleration;ThresholdUP;max;ThresholdDown;min;bufferTempo;minimumAmplitude;currentAmplitude;nbCycle;freq", fileName);
+            DataFileUtil.writeToFile("acceleration;ThresholdUP;max;ThresholdDown;min;bufferTempo;minimumAmplitude;currentAmplitude;nbCycle;freq;MappedFreq;currentFreq", fileName);
         } catch (IOException ex) {
             Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -268,7 +277,8 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
             try {
                 // TODO fixer le timestamp reçu par imu et remplacer System.nanoTime() par pair.getValue();
                 newValue = imu.registerDataIncoming()[currentAxe][0];
-                addValue(newValue, System.nanoTime());
+                addValue(newValue, System.currentTimeMillis());
+                
                 fileLine[0] = newValue;
                 fileLine[1] = maxTreshold;
                 fileLine[2] = max;
@@ -281,9 +291,11 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
                 fileLine[7] = (max - min);
                 fileLine[8] = getNbCycle();
                 fileLine[9] = getFrequence();
+                fileLine[10] = mappingFunction(getFrequence());
+                fileLine[11] = mappingFunction(currentFrequence);
                 DataFileUtil.writeToFile(fileLine, fileName);
-                System.out.println(getFrequence());
-                setEffort(getFrequence() / getEXPECTED_MAX_AVERAGE());
+                currentFrequence += speedFrequence * (mappingFunction(getFrequence() / getEXPECTED_MAX_AVERAGE()) - currentFrequence) / 2;
+                setEffort(currentFrequence);// / getEXPECTED_MAX_AVERAGE());//mappingFunction(getFrequence()));
                 Thread.yield();
             } catch (IOException ex) {
                 Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
@@ -313,12 +325,12 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      * @return the median frequence
      */
     private double medianFrequence() {
-        if(frequences.size() < 2) {
+        if(frequences.size() < 1) {
             return 0.0;
         }
         sortedFrequences = new ArrayList<>(frequences);
         Collections.sort(sortedFrequences);
-        return sortedFrequences.get(frequences.size() / 2 - 1);
+        return sortedFrequences.get(frequences.size() / 2);
     }
     
     /**
@@ -327,7 +339,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      * @return the mean frequence.
      */
     private double meanFrequence() {
-        return getNbCycle() / (timeMeasure[passingThresholdData.get(passingThresholdData.size() - 1)] - timeMeasure[passingThresholdData.get(0)]);
+        return ((double)getNbCycle()) / (timeMeasure[passingThresholdData.get(passingThresholdData.size() - 1)] - timeMeasure[passingThresholdData.get(0)]);
     }
     
     /**
@@ -407,9 +419,9 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
          * prediction system.
          */
         if (deltaErrorLesser != INVALID_FIRST_NOT_FOUND) {
-            deltaError += (0.5 - deltaError) / (3 *lengthBeforeNextExpectedThresholdPass);
+            deltaError += (MAX_DELTA_ERROR - deltaError) / (3 *lengthBeforeNextExpectedThresholdPass);
         } else if (lengthBeforeNextExpectedThresholdPass != INVALID_FIRST_NOT_FOUND) {
-            deltaError -= (deltaError - INIT_DELTA_ERROR) / (3 * lengthBeforeNextExpectedThresholdPass);
+            deltaError -= (deltaError - INIT_DELTA_ERROR) / (30 * lengthBeforeNextExpectedThresholdPass);
         }
     }
     
@@ -460,5 +472,38 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         min = ArrayUtil.getKSmallest(accelerationMeasures.clone(), accelerationMeasures.length, 8);
         maxTreshold = max - deltaError * (max - min);
         minTreshold = min + deltaError * (max - min);
+    }
+
+    /**
+     * function that map the frequence into a function between 0-1-2
+     * Where 0 is when we have a frequence 0
+     * Where 1 is when we have a frequence getEXPECTED_MAX_AVERAGE()
+     * Where 2 is when we have a freqence of getMAX_REACHED() * getEXPECTED_MAX_AVERAGE()
+     * @param frequence
+     * @return 
+     */
+    private double mappingFunction(double frequence) {
+        double powUp = 2;
+        double powDown = 4;
+        double average = getEXPECTED_MAX_AVERAGE();
+        /*double maxReached = getMAX_REACHED() * getEXPECTED_MAX_AVERAGE();
+        if (frequence < average) {
+            return Math.pow(frequence / (Math.pow(average, 1 - 1/powDown)),
+                    powDown);
+        } else if (maxReached == average || frequence > maxReached) {
+            return frequence;
+        } else {
+            return (Math.pow((frequence - average) * Math.pow(maxReached - average, powUp - 1), (1/powUp)) + average);    
+        }*/
+        
+        /*if (frequence < average / 2) {
+            return 0;
+        } else if (frequence < average) {
+            return frequence / 2;
+        } else {
+            return frequence;
+        }*/
+        
+        return frequence;
     }
 }

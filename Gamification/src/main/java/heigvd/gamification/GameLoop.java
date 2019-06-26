@@ -103,11 +103,7 @@ public final class GameLoop implements Observer
         this.gamePanel = gamePanel;
         this.program = program;
         program.addObserver(this);
-        try {
-            soundPlayer = new SoundPlayer();
-        } catch (LineUnavailableException ex) {
-            Logger.getLogger(GameLoop.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        soundPlayer = new SoundPlayer();
     }
     
     //Starts a new thread and runs the game loop in it.
@@ -259,6 +255,8 @@ public final class GameLoop implements Observer
     public void update(Observable o, Object o1) {
         if(!program.getIsRunning()) {
             stop();
+        } else {
+            gameEngine.setMode(Mode.values()[program.getIntensity().ordinal()]);
         }
     }
 }

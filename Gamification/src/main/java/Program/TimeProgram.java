@@ -6,20 +6,15 @@ package Program;
  * 
  * @author jimmy
  */
-public class TimeProgram extends AbstractProgram {
+public abstract class TimeProgram extends AbstractProgram {
     
-    /**
-     * Amount of seconds for the whole workout.
-     */
-    private final long time;
     
     /**
      * constructor
-     * @param time Amount of seconds for the whole workout.
+     * @param parts
      */
-    public TimeProgram(long time) {
-        super();
-        this.time = time * 1000;
+    public TimeProgram(WorkoutPart[] parts) {
+        super(parts);
     }
     
     /**
@@ -34,8 +29,11 @@ public class TimeProgram extends AbstractProgram {
             @Override
             public void run() {
                 try {
-                    Thread.sleep(time);
-                    endProgram();
+                    for (WorkoutPart part : parts) {
+                        Thread.sleep(part.getLength() * 1000);
+                        nextPart();
+                    }
+                    nextPart();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -43,4 +41,5 @@ public class TimeProgram extends AbstractProgram {
         };
         thread.start();
     }
+    
 }

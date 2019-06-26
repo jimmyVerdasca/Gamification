@@ -1,12 +1,14 @@
 package menu;
 
 import Program.AbstractProgram;
+import Program.EnduranceTimeProgram;
 import Program.TimeProgram;
 import effortMeasurer.EffortCalculator;
 import effortMeasurer.IMUCycleEffortCalculator;
 import heigvd.gamification.CharacterControllerJoycon;
 import heigvd.gamification.GameEngine;
 import heigvd.gamification.GameLoop;
+import heigvd.gamification.Mode;
 import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -50,11 +52,11 @@ public class Menu  extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setUndecorated(true);
         
-        gameEngine = new GameEngine();
+        AbstractProgram program = new EnduranceTimeProgram(); 
+        gameEngine = new GameEngine(Mode.values()[program.getIntensity().ordinal()]);
         new CharacterControllerJoycon(gameEngine.getCharacter(), gameEngine.getCHARACTER_MAX_SPEED());
         effortCalculator = new IMUCycleEffortCalculator();
         effortCalculator.start();
-        AbstractProgram program = new TimeProgram(60 * 10); //10 minutes avant le fin du jeu
         gamePanel = new GamePanel(this, gameEngine, effortCalculator);
         gameLoop = new GameLoop(gameEngine, effortCalculator, gamePanel, program);
         

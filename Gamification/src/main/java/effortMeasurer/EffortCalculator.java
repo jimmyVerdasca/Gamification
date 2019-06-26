@@ -44,6 +44,10 @@ public abstract class EffortCalculator extends TimerTask {
      * the child-classes depending of the detector types and effort of the user
      */
     private double EXPECTED_MAX_AVERAGE;
+    
+    /**
+     * percent maximum relative to EXPECTED_MAX_AVERAGE ever reached.
+     */
     private double MAX_REACHED;
     
     /**
@@ -185,7 +189,7 @@ public abstract class EffortCalculator extends TimerTask {
     }
     
     /**
-     * observable inner class to let classes rech the effort
+     * observable inner class to let classes reach the effort
      */
     public class EffortObservable extends Observable {
         
