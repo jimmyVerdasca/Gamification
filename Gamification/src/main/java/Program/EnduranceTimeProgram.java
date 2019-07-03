@@ -11,9 +11,9 @@ public class EnduranceTimeProgram extends TimeProgram {
 
     public EnduranceTimeProgram() {
         super(new WorkoutPart[]{
-            new WorkoutPart(1 * 20, WorkoutIntensity.FORCE),
-            new WorkoutPart(1 * 20, WorkoutIntensity.PUISSANCE),
-            new WorkoutPart(1 * 20, WorkoutIntensity.ENDURANCE),
+            new WorkoutPart(1 * 60, WorkoutIntensity.FORCE),
+            new WorkoutPart(1 * 60, WorkoutIntensity.PUISSANCE),
+            new WorkoutPart(10 * 60, WorkoutIntensity.ENDURANCE),
         });
     }
     

@@ -174,7 +174,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
             throws IOException,
                    FileNotFoundException,
                    ParseException {
-        super(0.003, 300);
+        super(0.0123, 300); //0.0123 is my frequence at 12K speed
         
         imu = new BluetoothIMUAPI();
         imu.configure();
@@ -295,7 +295,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
                 fileLine[11] = mappingFunction(currentFrequence);
                 DataFileUtil.writeToFile(fileLine, fileName);
                 currentFrequence += speedFrequence * (mappingFunction(getFrequence() / getEXPECTED_MAX_AVERAGE()) - currentFrequence) / 2;
-                setEffort(currentFrequence);// / getEXPECTED_MAX_AVERAGE());//mappingFunction(getFrequence()));
+                setEffort(currentFrequence);
                 Thread.yield();
             } catch (IOException ex) {
                 Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);

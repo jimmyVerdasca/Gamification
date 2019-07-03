@@ -155,7 +155,6 @@ public class GameEngine {
         currentMode = firstMode;
         soundPlayer = new SoundPlayer();
         maxCurrentSpeed = MAX_SPEED;
-        System.out.println("first mode : " + firstMode.name());
         try {
             backOne = new Background(0,0, firstMode);
             backTwo = new Background(0, backOne.getImageHeight(), firstMode);
