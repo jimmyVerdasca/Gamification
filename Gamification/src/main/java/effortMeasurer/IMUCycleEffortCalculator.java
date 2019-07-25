@@ -1,5 +1,6 @@
 package effortMeasurer;
 
+import Program.Movement;
 import imu.BluetoothIMUAPI;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -30,10 +31,21 @@ import util.DataFileUtil;
  */
 public class IMUCycleEffortCalculator extends EffortCalculator {
 
+    
     /**
      * Shimmer3 accelerometer handler
      */
-    private final BluetoothIMUAPI imu;
+    private static BluetoothIMUAPI imu = null;
+    static {
+        try {
+            imu = new BluetoothIMUAPI();
+            imu.configure();
+        } catch (IOException ex) {
+            Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ParseException ex) {
+            Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     
     /**
      * axe used by the shimmer (0,1 or 2)
@@ -116,7 +128,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      * maximum percent between max and his threashold or min and his threshold,
      * when we don't detect cycles anymore.
      */
-    private final double MAX_DELTA_ERROR = 0.495;
+    private final double MAX_DELTA_ERROR = 0.45;
     
     /**
      * current percent between max and his threshold or min and his threshold.
@@ -164,30 +176,32 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
     /**
      * constructor
      * 
+     * @param movement kind of movement the detector mode starts with
      * @throws IOException If we can't reach the Shimmer3 accelerometer.
      * @throws FileNotFoundException If the Shimmer3 API has not found the
      *                               calibration file.
      * @throws ParseException If there is an parsing error in the calibration
      *                        file.
      */
-    public IMUCycleEffortCalculator()
+    public IMUCycleEffortCalculator(Movement movement)
             throws IOException,
                    FileNotFoundException,
                    ParseException {
-        super(0.0123, 300); //0.0123 is my frequence at 12K speed
+        super(new double[]{0.0123, 0.003, 0.1}, movement, 215); //0.0123 is my frequence at 12K speed
         
-        imu = new BluetoothIMUAPI();
-        imu.configure();
         accelerationMeasures = new double[getLENGTH_AVERAGE_LIST()];
         timeMeasure = new long[getLENGTH_AVERAGE_LIST()];
         for (int i = 0; i < getLENGTH_AVERAGE_LIST(); i++) {
-            accelerationMeasures[i] = getEXPECTED_MAX_AVERAGE() / 2;
+            accelerationMeasures[i] = 0.0;
         }
         passingThresholdData = new ArrayList<>(getLENGTH_AVERAGE_LIST() / 2);
         frequences = new ArrayList<>(getLENGTH_AVERAGE_LIST() / 2);
         deltaError = INIT_DELTA_ERROR;
         firstIndexNotFoundThreshold = INVALID_FIRST_NOT_FOUND;
         lengthBeforeNextExpectedThresholdPass = INVALID_FIRST_NOT_FOUND;
+        if (imu == null) {
+            throw new IOException("impossible to link the Shimmer3");
+        }
     }
     
     /**
@@ -218,13 +232,15 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      */
     @Override
     public void start() {
-        super.start();
-        running = true;
-        try {
-            imu.startCapture();
-        } catch (IOException ex) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(ex);
+        if(!running) {
+            super.start();
+            running = true;
+            try {
+                imu.startCapture();
+            } catch (IOException ex) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ex);
+            }
         }
     }
     
@@ -234,13 +250,14 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
      */
     @Override
     public void stop() {
-        super.stop();
-        running = false;
-        try {
-            imu.stopCapture();
-        } catch (IOException ex) {
-            Logger.getLogger(IMUCycleEffortCalculator.class.getName())
-                    .log(Level.SEVERE, null, ex);
+        if(running) {
+            running = false;
+            try {
+                imu.stopCapture();
+            } catch (IOException ex) {
+                Logger.getLogger(IMUCycleEffortCalculator.class.getName())
+                        .log(Level.SEVERE, null, ex);
+            }
         }
     }
 
@@ -264,22 +281,23 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
         long time = System.nanoTime();
         long time2;
         double newValue;
-        double tempo = 1.0;
-        String fileName = "camilo1Tapis85k.txt";
+        
+        /*double tempo = 1.0;
+        String fileName = "jimmyXmTapisXK.txt";
         double[] fileLine = new double[12];
         fileLine[6] = 18;
         try {
             DataFileUtil.writeToFile("acceleration;ThresholdUP;max;ThresholdDown;min;bufferTempo;minimumAmplitude;currentAmplitude;nbCycle;freq;MappedFreq;currentFreq", fileName);
         } catch (IOException ex) {
             Logger.getLogger(IMUCycleEffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
         while (running) {
             try {
                 // TODO fixer le timestamp reçu par imu et remplacer System.nanoTime() par pair.getValue();
                 newValue = imu.registerDataIncoming()[currentAxe][0];
                 addValue(newValue, System.currentTimeMillis());
                 
-                fileLine[0] = newValue;
+                /*fileLine[0] = newValue;
                 fileLine[1] = maxTreshold;
                 fileLine[2] = max;
                 fileLine[3] = minTreshold;
@@ -293,8 +311,8 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
                 fileLine[9] = getFrequence();
                 fileLine[10] = mappingFunction(getFrequence());
                 fileLine[11] = mappingFunction(currentFrequence);
-                DataFileUtil.writeToFile(fileLine, fileName);
-                currentFrequence += speedFrequence * (mappingFunction(getFrequence() / getEXPECTED_MAX_AVERAGE()) - currentFrequence) / 2;
+                DataFileUtil.writeToFile(fileLine, fileName);*/
+                currentFrequence += speedFrequence * (mappingFunction(getFrequence() / getCurrentFreqTargetted()) - currentFrequence) / 2;
                 setEffort(currentFrequence);
                 Thread.yield();
             } catch (IOException ex) {
@@ -476,17 +494,19 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
 
     /**
      * function that map the frequence into a function between 0-1-2
-     * Where 0 is when we have a frequence 0
-     * Where 1 is when we have a frequence getEXPECTED_MAX_AVERAGE()
-     * Where 2 is when we have a freqence of getMAX_REACHED() * getEXPECTED_MAX_AVERAGE()
+ Where 0 is when we have a frequence 0
+ Where 1 is when we have a frequence getFreqAtVMASpeed()
+ Where 2 is when we have a freqence of getMAX_REACHED() * getFreqAtVMASpeed()
      * @param frequence
      * @return 
      */
     private double mappingFunction(double frequence) {
         double powUp = 2;
         double powDown = 4;
-        double average = getEXPECTED_MAX_AVERAGE();
-        /*double maxReached = getMAX_REACHED() * getEXPECTED_MAX_AVERAGE();
+        double average = getCurrentFreqTargetted();
+        
+        // uncomment to use curved function
+        /*double maxReached = getMAX_REACHED() * getFreqAtVMASpeed();
         if (frequence < average) {
             return Math.pow(frequence / (Math.pow(average, 1 - 1/powDown)),
                     powDown);
@@ -496,6 +516,7 @@ public class IMUCycleEffortCalculator extends EffortCalculator {
             return (Math.pow((frequence - average) * Math.pow(maxReached - average, powUp - 1), (1/powUp)) + average);    
         }*/
         
+        // uncomment to use linear by part function
         /*if (frequence < average / 2) {
             return 0;
         } else if (frequence < average) {

@@ -57,6 +57,10 @@ public class Character extends WallObject {
         return y;
     }
 
+    public void setY(int y) {
+        this.y = y;
+    }
+
     /**
      * move the character relatively to his speed
      */

@@ -43,18 +43,35 @@ public class CharacterControllerJoycon extends AbstractCharacterController {
     private boolean isUPPressed = false;
     
     /**
+     * are we communicating with a joycon left => true or right => false
+     */
+    private boolean isLeft;
+    
+    /**
+     * the Button name to press to start the movement capture evaluation
+     */
+    private final String BUTTON_TO_PRESS;
+    
+    /**
      * constructor
      * 
      * @param character that we manipulate.
      * @param maxSpeed the maximum speed reachable by the character.
      */
-    public CharacterControllerJoycon(Character character, int maxSpeed) {
+    public CharacterControllerJoycon(Character character, int maxSpeed, boolean isLeft) {
         super(character, maxSpeed);
+        this.isLeft = isLeft;
         for (int i = 0; i < movement.length; i++) {
             movement[i] = 0;
         }
         
-        joycon = new Joycon(JoyconConstant.JOYCON_LEFT);
+        if (isLeft) {
+            joycon = new Joycon(JoyconConstant.JOYCON_LEFT);
+            BUTTON_TO_PRESS = JoyconConstant.UP;
+        } else {
+            joycon = new Joycon(JoyconConstant.JOYCON_RIGHT);
+            BUTTON_TO_PRESS = JoyconConstant.X;
+        }
         joycon.setListener(new JoyconListener() {
             
             /**
@@ -66,10 +83,9 @@ public class CharacterControllerJoycon extends AbstractCharacterController {
                 //inputs joycon map
                 Set<Map.Entry<String, Boolean>> entrySet = je.getNewInputs().entrySet();
                 for (Map.Entry<String, Boolean> entry : entrySet) {
-                        
-                    if (entry.getKey().equals(JoyconConstant.UP) && entry.getValue() && index < movement.length) {
+                    if (entry.getKey().equals(BUTTON_TO_PRESS) && entry.getValue() && index < movement.length) {
                         isUPPressed = true;
-                    } else if (entry.getKey().equals(JoyconConstant.UP) && !entry.getValue()) {
+                    } else if (entry.getKey().equals(BUTTON_TO_PRESS) && !entry.getValue()) {
                         isUPPressed = false;
                         for (int i = 0; i < movement.length; i++) {
                             movement[i] = 0;
@@ -97,7 +113,13 @@ public class CharacterControllerJoycon extends AbstractCharacterController {
         for (double s : movement) {
             total += s;
         }
-        return -(total / index) / MAX_POSSIBLE_ACCEL;
+        
+        //invert axe between left and right
+        if (isLeft) {
+            return -(total / index) / MAX_POSSIBLE_ACCEL;
+        } else {
+            return (total / index) / MAX_POSSIBLE_ACCEL;
+        }
     }
     
     /**

@@ -6,7 +6,12 @@ import heigvd.gamification.fallingitems.FallingItem;
 import heigvd.gamification.fallingitems.LittleRock;
 import heigvd.gamification.fallingitems.Rock;
 import heigvd.gamification.fallingitems.Shield;
+import heigvd.gamification.rules.RulesManager;
+import heigvd.gamification.rules.RulesName;
+import java.awt.Toolkit;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Random;
@@ -25,6 +30,32 @@ import sound.SoundPlayer;
  */
 public class GameEngine {
     
+    private final int NB_PLAYERS;
+
+    public List<RulesName> getMedalsWon() {
+        return ruleManager.getRulesCleared();
+    }
+
+    private class SIDE_Obstacle {
+        boolean isLeft;
+        Integer indexObstacles;
+
+        private SIDE_Obstacle(boolean isLeft, int obstacleIndex) {
+            this.isLeft = isLeft;
+            this.indexObstacles = obstacleIndex;
+        }
+
+        private int getIndex() {
+            return indexObstacles;
+        }
+
+        private boolean getIsLeft() {
+            return isLeft;
+        }
+     }
+    private final ArrayList<SIDE_Obstacle>[] zigzagLogic;
+    private final int GAP_BETWEEN_PLAYERS = 100;
+    
     /**
      * First copy of the background to scroll infinitely vertically.
      */
@@ -38,7 +69,7 @@ public class GameEngine {
     /**
      * Solo caracter of the game moving at left and right.
      */
-    private Character character;
+    private Character[] character;
     
     /**
      * Circular buffer containing up to MAX_NB_OBSTACLES FallingItem.
@@ -86,7 +117,7 @@ public class GameEngine {
     /**
      * Limit maximum value for maxCurrentSpeed.
      */
-    private final int ABSOLUTE_MAX_SPEED = 40;
+    private final int ABSOLUTE_MAX_SPEED = 35;
     
     /**
      * Value that maxCurrentSpeed approche permanetly with step of
@@ -125,7 +156,7 @@ public class GameEngine {
      * This variable should be in client side. But before we should replace the
      * charactere coordinate system from 0-WALL_WIDTH to 0-100%.
      */
-    private final int WALL_WIDTH = 576;
+    protected final int WALL_WIDTH = 576;
  
     /**
      * used to randomize the FailingItem start position.
@@ -141,9 +172,13 @@ public class GameEngine {
      * Inner class allowing to observe the score of the game.
      */
     private ScoreObservable obs;
+    private final EndObservable endObs;
     
     
     private Mode currentMode;
+    private RulesManager ruleManager;
+    private final int WALL_HEIGHT;
+    private long timeExcellentStart;
     
     /**
      * constructor of the game
@@ -151,10 +186,18 @@ public class GameEngine {
      * maxCurrentSpeed to permanently approche MAX_SPEED.
      */
     public GameEngine(Mode firstMode) {
+        this(firstMode, 1);
+        
+    }
+    
+    
+    public GameEngine(Mode firstMode, int nbPlayers) {
         super();
+        NB_PLAYERS = nbPlayers;
         currentMode = firstMode;
         soundPlayer = new SoundPlayer();
         maxCurrentSpeed = MAX_SPEED;
+        WALL_HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height;
         try {
             backOne = new Background(0,0, firstMode);
             backTwo = new Background(0, backOne.getImageHeight(), firstMode);
@@ -162,14 +205,25 @@ public class GameEngine {
             Logger.getLogger(GameEngine.class.getName())
                     .log(Level.SEVERE, null, ex);
         }
+        character = new Character[NB_PLAYERS];
         try {
-            character = new Character(WALL_WIDTH); //wall width 
+            for (int i = 0; i < NB_PLAYERS; i++) {
+                character[i] = new Character(WALL_WIDTH); //wall width 
+                character[i].setY(character[i].getY() - i * GAP_BETWEEN_PLAYERS);
+            }
+            
         } catch (IOException ex) {
             Logger.getLogger(GameEngine.class.getName())
                     .log(Level.SEVERE, null, ex);
         }
+        ruleManager = new RulesManager();
         
         obstacles = new FallingItem[MAX_NB_OBSTACLES];
+        
+        zigzagLogic = new ArrayList[NB_PLAYERS]; 
+        for (int i = 0; i < NB_PLAYERS; i++) { 
+            zigzagLogic[i] = new ArrayList<SIDE_Obstacle>(); 
+        } 
         
         /**
          * update the max current speed each MS_BETWEEN_MAX_SPEED_UPDATES
@@ -182,6 +236,7 @@ public class GameEngine {
                 }
         } ,0,MS_BETWEEN_MAX_SPEED_UPDATES);
         obs = new ScoreObservable();
+        endObs = new EndObservable();
     }
     
     /**
@@ -206,6 +261,7 @@ public class GameEngine {
         backOne.incrementY(speed, currentMode);
         backTwo.incrementY(speed, currentMode);
         incrementScore(speed);
+        ruleManager.addObjectif(RulesName.RUN_N_PIXELS, speed);
     }
     
     /**
@@ -221,10 +277,16 @@ public class GameEngine {
      * One step of moving FallintItem.
      */
     public void downObstacles() {
-        for (FallingItem obstacle : obstacles) {
-            if (obstacle !=  null) {
-                obstacle.move(speed);
-                obstacle.updateSpeed();
+        for (int i = 0; i < obstacles.length; i++) {
+            if (obstacles[i] !=  null) {
+                obstacles[i].move(speed);
+                obstacles[i].updateSpeed();
+                if(obstacles[i].getY() > WALL_HEIGHT) {
+                    if(obstacles[i].getIS_NEGATIVE() == true) {
+                        ruleManager.addObjectif(RulesName.AVOID_ROCKS);
+                    }
+                    obstacles[i] = null;
+                }
             }
         }
     }
@@ -239,6 +301,9 @@ public class GameEngine {
         FallingItem newObstacle;
         try {
             newObstacle = (FallingItem)possiblesObstables[randObstacleIndex].newInstance();
+            if (obstacles[currentObstacleIndex] != null) {
+                ruleManager.addObjectif(RulesName.AVOID_ROCKS);
+            }
             obstacles[currentObstacleIndex] = newObstacle;
             obstacles[currentObstacleIndex].setX(rand.nextInt(WALL_WIDTH - obstacles[currentObstacleIndex].getImageWidth()));
             currentObstacleIndex = ++currentObstacleIndex % MAX_NB_OBSTACLES;
@@ -263,9 +328,25 @@ public class GameEngine {
         if (percent < 0) {
             throw new IllegalArgumentException("effort can't be negative");
         } else if (percent > 1) {
-            newStep = (int)(maxCurrentSpeed * (1 - (percent - 1) / (maxPossible - 1))) - speed;
+            // avec ralentissement
+            //newStep = (int)(maxCurrentSpeed * (1 - (percent - 1) / (maxPossible - 1))) - speed;
+            newStep = (int)(maxCurrentSpeed * (1 + (percent - 1) / (maxPossible - 1))) - speed;
+            possiblesObstables[3] = BigRock.class;
+            possiblesObstables[4] = BigRock.class;
+            ruleManager.resetObjectif(RulesName.EXCELLENT_EFFORT);
+            timeExcellentStart = 0;
         } else {
             newStep = (int)(percent * maxCurrentSpeed) - speed;
+            possiblesObstables[3] = Bonus.class;
+            possiblesObstables[4] = Shield.class;
+            if (percent >= 0.8 && timeExcellentStart == 0) {
+                timeExcellentStart = System.currentTimeMillis();
+            } else if (percent >= 0.8) {
+                ruleManager.setObjectif(RulesName.EXCELLENT_EFFORT, (int)((System.currentTimeMillis() - timeExcellentStart)/ 1000));
+            } else {
+                ruleManager.resetObjectif(RulesName.EXCELLENT_EFFORT);
+                timeExcellentStart = 0;
+            }
         }
         
         if (newStep > 0) {
@@ -289,22 +370,26 @@ public class GameEngine {
      * 
      * @return the character
      */
-    public Character getCharacter() {
+    public Character[] getCharacter() {
         return character;
     }
 
     /**
-     * check if a collision append
+     * check if a collision append 
      * resolve it if necessary.
      */
     public void checkCollide() {
         FallingItem obstacle;
         for (int i = 0; i < obstacles.length; i++) {
             obstacle = obstacles[i];
-            if (obstacle != null && obstacle.getY() + obstacle.getImageHeight() > character.getY() && obstacle.getY() < character.getY() + character.getImageHeight()) {
-                if(isReallyColliding(obstacle)) {
-                    obstacles[i] = null;
-                    resolveCollide(obstacle);
+            for (int j = 0; j < NB_PLAYERS; j++) {
+                if (obstacle != null && obstacle.getY() + obstacle.getImageHeight() > character[j].getY() && obstacle.getY() < character[j].getY() + character[j].getImageHeight()) {
+                    if(isReallyColliding(obstacle, character[j])) {
+                        obstacles[i] = null;
+                        resolveCollide(obstacle, j);
+                    } else {
+                        addZigZag(j, character[j].getX(), i, obstacle.getX());
+                    }
                 }
             }
         }
@@ -318,7 +403,7 @@ public class GameEngine {
      * @param obstacle FallingItem currently evaluated.
      * @return true if the character collide this obstacle, false otherwise.
      */
-    private boolean isReallyColliding(FallingItem obstacle) {
+    private boolean isReallyColliding(FallingItem obstacle, Character character) {
         if (character.getX() < obstacle.getX() + obstacle.getImageWidth() &&
             character.getX() + character.getImageWidth() > obstacle.getX() &&
             character.getY() < obstacle.getY() + obstacle.getImageHeight() &&
@@ -341,9 +426,17 @@ public class GameEngine {
      * 
      * @param obstacle instance that we resolve the collision.
      */
-    private void resolveCollide(FallingItem obstacle) {
+    private void resolveCollide(FallingItem obstacle, int characterIndex) {
         if(!isShieldActivated || isShieldActivated && !obstacle.getIS_NEGATIVE()) {
+            if (obstacle.getIS_NEGATIVE()) {
+                ruleManager.resetObjectif(RulesName.AVOID_ROCKS);
+                zigzagLogic[characterIndex].clear();
+                ruleManager.setObjectif(RulesName.ZIGZAG_ROCKS, getMaxZigZag());
+            }
             int temp = obstacle.setMaxSpeed(maxCurrentSpeed);
+            if(temp > maxCurrentSpeed && maxCurrentSpeed > MAX_SPEED) {
+                ruleManager.addObjectif(RulesName.DOUBLE_SPEED_BOOST);
+            }
             if (ABSOLUTE_MAX_SPEED < temp) {
                 maxCurrentSpeed = ABSOLUTE_MAX_SPEED;
             } else if (-ABSOLUTE_MAX_SPEED > temp) {
@@ -354,6 +447,7 @@ public class GameEngine {
         }
         if (obstacle.giveSield()) {
             isShieldActivated = true;
+            possiblesObstables[4] = Bonus.class;
             new java.util.Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -361,17 +455,47 @@ public class GameEngine {
                 }
             } ,7000);
         }
+        
+        if (isShieldActivated && obstacle.getIS_NEGATIVE()) {
+            ruleManager.addObjectif(RulesName.DESTROY_ROCKS);
+            zigzagLogic[characterIndex].clear();
+            ruleManager.setObjectif(RulesName.ZIGZAG_ROCKS, getMaxZigZag());
+        }
+        
         if (obstacle.getIS_NEGATIVE() && obstacle.getSoundPath() != null) {
             try {
                 soundPlayer.playSound(obstacle.getSoundPath(), false);
-            } catch (UnsupportedAudioFileException ex) {
-                Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (LineUnavailableException ex) {
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
                 Logger.getLogger(GameEngine.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+    
+    
+    private void addZigZag(int characterIndex, int xCharacter, int obstacleIndex, int xObstacle) {
+        if (obstacles[obstacleIndex] != null && obstacles[obstacleIndex].getIS_NEGATIVE()) {
+            boolean isLeft = xCharacter < xObstacle;
+            if (zigzagLogic[characterIndex].isEmpty()) {
+                zigzagLogic[characterIndex].add(new SIDE_Obstacle(isLeft, obstacleIndex));
+            } else if (zigzagLogic[characterIndex].get(zigzagLogic[characterIndex].size() - 1).getIndex() != obstacleIndex) {
+                if (zigzagLogic[characterIndex].get(zigzagLogic[characterIndex].size() - 1).getIsLeft() == isLeft) {
+                    zigzagLogic[characterIndex].clear();
+                } else {
+                    zigzagLogic[characterIndex].add(new SIDE_Obstacle(isLeft, obstacleIndex));
+                }
+            }
+            ruleManager.setObjectif(RulesName.ZIGZAG_ROCKS, getMaxZigZag());
+        }
+    }
+    
+    private int getMaxZigZag() {
+        int max = 0;
+        for (int i = 0; i < NB_PLAYERS; i++) {
+            if(zigzagLogic[i].size() > max) {
+                max = zigzagLogic[i].size();
+            }
+        }
+        return max;
     }
     
     /**
@@ -379,6 +503,7 @@ public class GameEngine {
      */
     public void deactivateShield() {
         isShieldActivated = false;
+        possiblesObstables[4] = Shield.class;
     }
 
     /**
@@ -434,6 +559,12 @@ public class GameEngine {
     public Mode getMode() {
         return currentMode;
     }
+
+    public int getNB_PLAYERS() {
+        return NB_PLAYERS;
+    }
+    
+    
     
     /**
      * set a new mode on. The behaviour will change as soon as possible
@@ -450,6 +581,23 @@ public class GameEngine {
      */
     public void addScoreObserver(Observer o) {
         obs.addObserver(o);
+    }
+    
+    public void stop() {
+        soundPlayer.stop();
+        endObs.update();
+    }
+
+    public void addEndObserver(Observer o) {
+        endObs.addObserver(o);
+    }
+
+    public long getScore() {
+        return score;
+    }
+
+    public RulesManager getRuleManager() {
+        return ruleManager;
     }
     
     /**
@@ -471,7 +619,21 @@ public class GameEngine {
          * @return the score.
          */
         public long getScore() {
-            return score;
+            return GameEngine.this.getScore();
+        }
+    }
+    
+    /**
+     * Inner class allowing to get notified when the game finishes
+     */
+    public class EndObservable extends Observable {
+        
+        /**
+         * notify observers that the game is finish
+         */
+        protected void update() {
+            setChanged();
+            notifyObservers();
         }
     }
 }

@@ -1,5 +1,6 @@
 package effortMeasurer;
 
+import Program.Movement;
 import imu.BluetoothIMUAPI;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,9 +39,9 @@ public class IMUEffortCalculator extends EffortCalculator {
      * @throws ParseException If there is an parsing error in the calibration
      *                        file.
      */
-    public IMUEffortCalculator() 
+    public IMUEffortCalculator(Movement movement) 
             throws IOException, FileNotFoundException, ParseException {
-        super(25, 100);
+        super(new double[]{25, 25, 25}, movement, 100);
         imu = new BluetoothIMUAPI();
         imu.configure();
         imu.startCapture();
@@ -72,6 +73,6 @@ public class IMUEffortCalculator extends EffortCalculator {
         for (double speed : accList) {
             average += speed;
         }
-        setEffort((average / getLENGTH_AVERAGE_LIST()) / getEXPECTED_MAX_AVERAGE());
+        setEffort((average / getLENGTH_AVERAGE_LIST()) / getCurrentFreqTargetted());
     }
 }

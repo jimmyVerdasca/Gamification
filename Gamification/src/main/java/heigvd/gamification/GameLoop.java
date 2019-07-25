@@ -60,7 +60,7 @@ public final class GameLoop implements Observer
     /**
      * If we are able to get as high as this FPS, don't render again.
      */
-    final double TARGET_FPS = 60;
+    final double TARGET_FPS = 40;
     
     /**
      * Time expected between each render.
@@ -90,19 +90,18 @@ public final class GameLoop implements Observer
      * @param effortCalculator Detector to receive the effort of the player.
      * @param gamePanel View of the game, where we display the game state.
      * @param program Type of workout to receive the end input.
-     * @throws java.io.IOException If we can't load the slider image
      */
     public GameLoop(
             GameEngine gameEngine,
             EffortCalculator effortCalculator,
             GamePanel gamePanel,
-            AbstractProgram program) throws IOException
+            AbstractProgram program)
     {
         this.gameEngine = gameEngine;
         this.effortCalculator = effortCalculator;
         this.gamePanel = gamePanel;
         this.program = program;
-        program.addObserver(this);
+        program.addPartObserver(this);
         soundPlayer = new SoundPlayer();
     }
     
@@ -145,6 +144,7 @@ public final class GameLoop implements Observer
         int nextObstacleCreationFrame = 100;
         boolean shouldAddObstacle;
         Random rand = new Random();
+        double currentEffort = 0.0;
         final int DELAY_BETWEEN_OBSTACLES = 23;
         final int VARIATION_BETWEEN_OBSTACLES = 80;
         
@@ -158,8 +158,11 @@ public final class GameLoop implements Observer
             {
                 shouldAddObstacle = updateTotal % nextObstacleCreationFrame == 0;
                 updateGame(shouldAddObstacle);
-                if (shouldAddObstacle) {
+                currentEffort = effortCalculator.getEffort();
+                if (shouldAddObstacle && currentEffort <= 1) {
                     nextObstacleCreationFrame = rand.nextInt(VARIATION_BETWEEN_OBSTACLES) + DELAY_BETWEEN_OBSTACLES;
+                } else if (shouldAddObstacle && currentEffort > 1) {
+                    nextObstacleCreationFrame = DELAY_BETWEEN_OBSTACLES / 2;
                 }
                 lastUpdateTime += TIME_BETWEEN_UPDATES;
                 updateCount++;
@@ -214,8 +217,10 @@ public final class GameLoop implements Observer
         gameEngine.setSpeed(effortCalculator.getEffort(), effortCalculator.getMAX_REACHED());
         gameEngine.downBackground();
         gameEngine.downObstacles();
-        gameEngine.getCharacter().move();
-        gameEngine.getCharacter().downVelocity();
+        for (Character character : gameEngine.getCharacter()) {
+            character.move();
+            character.downVelocity();
+        }
         if (addingNextObstacle) {
             gameEngine.addObstacle();
         }
@@ -242,6 +247,8 @@ public final class GameLoop implements Observer
      */
     public void stop() {
         running = false;
+        soundPlayer.stop();
+        gameEngine.stop();
     }
 
     /**
@@ -257,6 +264,8 @@ public final class GameLoop implements Observer
             stop();
         } else {
             gameEngine.setMode(Mode.values()[program.getIntensity().ordinal()]);
+            effortCalculator.setTargetPercentEffort(program.getIntensity().getPercent());
+            effortCalculator.setFreqAtVMA(program.getMovement());
         }
     }
 }

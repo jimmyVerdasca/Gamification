@@ -6,9 +6,10 @@ package Program;
  * 
  * @author jimmy
  */
-public abstract class TimeProgram extends AbstractProgram {
+public class TimeProgram extends AbstractProgram {
     
-    
+    private long startingTime;
+    private boolean running = false;
     /**
      * constructor
      * @param parts
@@ -28,9 +29,18 @@ public abstract class TimeProgram extends AbstractProgram {
         Thread thread = new Thread() {
             @Override
             public void run() {
+                running = true;
+                startingTime = System.currentTimeMillis();
+                long nextPartTime = 0;
                 try {
-                    for (WorkoutPart part : parts) {
-                        Thread.sleep(part.getLength() * 1000);
+                    for (WorkoutPart part : getParts()) {
+                        nextPartTime += part.getLength();
+                        do {
+                            if(running) {
+                                Thread.sleep(300);
+                            }
+                            updateCurrentLength();
+                        } while(getCurrentLength() < nextPartTime && running);
                         nextPart();
                     }
                     nextPart();
@@ -42,4 +52,21 @@ public abstract class TimeProgram extends AbstractProgram {
         thread.start();
     }
     
+    /**
+     * stop properly the TimeProgram
+     */
+    @Override
+    public void stop(){
+        running = false;
+    }
+    
+    /**
+     * define the unit of length
+     * 
+     * @return the current length value
+     */
+    @Override
+    public long getCurrentLength() {
+        return (System.currentTimeMillis() - startingTime) / 1000;
+    }
 }

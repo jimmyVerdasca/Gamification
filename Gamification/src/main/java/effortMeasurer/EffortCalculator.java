@@ -1,5 +1,6 @@
 package effortMeasurer;
 
+import Program.Movement;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -43,49 +44,61 @@ public abstract class EffortCalculator extends TimerTask {
      * Value expected for an optimal effort, should be updated by
      * the child-classes depending of the detector types and effort of the user
      */
-    private double EXPECTED_MAX_AVERAGE;
+    private double freqAtVMASpeed;
+    private double targetPercentEffort;
+    private double[] freqAtVMAByMovements;
     
     /**
-     * percent maximum relative to EXPECTED_MAX_AVERAGE ever reached.
+     * percent maximum relative to freqAtVMASpeed ever reached.
      */
-    private double MAX_REACHED;
+    private double[] MAX_REACHED;
     
     /**
      * observable inner class to let others class reach effort
      */
     private EffortObservable obs;
     
-    /**
-     * "database" where is store MAX_REACHED
-     */
-    private String pathConfig = "src/main/java/effortMeasurer/CycleEffortConfig.properties";
-    private String MAX_REACHED_NAME_PROPERTY = "MAX_REACHED";
+    private Movement currentMovement;
+    
 
     /**
      * constructor build the list of "current measures".
      * get the MAX_REACHED in database. or create it.
      * 
-     * @param expectedMaxAverage Value expected for an optimal effort.
+     * @param freqAtVMAByMovement Values expected for an optimal effort by kind
+     *                           of movement.
+     * @param currentMovement the movement with wich we start.
      * @param lengthDataList size of the list that will be created by
      *                       child-classes.
      */
-    public EffortCalculator(double expectedMaxAverage, int lengthDataList) {
-        EXPECTED_MAX_AVERAGE = expectedMaxAverage;
+    public EffortCalculator(double[] freqAtVMAByMovement, Movement currentMovement, int lengthDataList) {
+        this.currentMovement = currentMovement;
+        freqAtVMASpeed = freqAtVMAByMovement[currentMovement.ordinal()];
+        freqAtVMAByMovements = freqAtVMAByMovement;
+        targetPercentEffort = 0.8;
         LENGTH_AVERAGE_LIST = lengthDataList;
         obs = new EffortObservable();
-        
-        try {
-            FileInputStream input = new FileInputStream(pathConfig);
-            Properties prop = new Properties();
-            prop.load(input);
-            MAX_REACHED = Double.parseDouble(prop.getProperty(MAX_REACHED_NAME_PROPERTY));
-        } catch(IOException ex) {
-            MAX_REACHED = expectedMaxAverage;
+        MAX_REACHED = new double[freqAtVMAByMovement.length];
+        for (int i = 0; i < freqAtVMAByMovement.length; i++) {
+            MAX_REACHED[i] = 1.5;
         }
     }
-    
+
     /**
-     * overridable method to set the relative detector on.
+     * set the percent of freq at VMA speed we are targeting right now.
+     * For example if we are training endurance we want 60% of the VMA.
+     * Then we call setTargetPercentEffort(0.6).
+     * As default we want 0.8 of the VMA.
+     * 
+     * @param targetPercentEffort the new percent we want to set
+     */
+    public void setTargetPercentEffort(double targetPercentEffort) {
+        this.targetPercentEffort = targetPercentEffort;
+    }
+
+    /**
+     * Overridable method to set the relative detector on.
+     * Care to not call twice.
      * 
      * Call super if you override.
      */
@@ -112,8 +125,8 @@ public abstract class EffortCalculator extends TimerTask {
      * @param effort the new effort value
      */
     protected final void setEffort(double effort) {
-        if (effort > MAX_REACHED) {
-            MAX_REACHED = effort;
+        if (effort > MAX_REACHED[currentMovement.ordinal()]) {
+            MAX_REACHED[currentMovement.ordinal()] = effort;
         } 
         synchronized (lock) {
             this.effort = effort;
@@ -127,16 +140,26 @@ public abstract class EffortCalculator extends TimerTask {
      * @return the MAX_REACHED value ever.
      */
     public double getMAX_REACHED() {
-        return MAX_REACHED;
+        return MAX_REACHED[currentMovement.ordinal()];
     }
     
     /**
-     * return the optimale effort value.
+     * return the freq expected at VMA speed
      * 
-     * @return the optimale effort value.
+     * @return the freq expected at VMA speed
      */
-    public final double getEXPECTED_MAX_AVERAGE() {
-        return EXPECTED_MAX_AVERAGE;
+    public final double getFreqAtVMASpeed() {
+        return freqAtVMASpeed;
+    }
+    
+    /**
+     * Return the current frequence targetted relative to the frequence at Max
+     * Anaerobie speed and the percent of this speed we want to reach.
+     * 
+     * @return the current frequence targetted.
+     */
+    public double getCurrentFreqTargetted() {
+        return freqAtVMASpeed * targetPercentEffort;
     }
 
     /**
@@ -157,35 +180,18 @@ public abstract class EffortCalculator extends TimerTask {
         obs.addObserver(o);
     }
     
-    /**
-     * overridable method that Stop the workout detection properly.
-     * Stock the MAX_REACHED in database.
-     * 
-     * Call super if you override.
-     */
+
+    public synchronized void setFreqAtVMA(Movement movement) {
+        currentMovement = movement;
+        freqAtVMASpeed = freqAtVMAByMovements[movement.ordinal()];
+    }
+    
     public void stop() {
-        FileOutputStream output =  null;
-        try {
-            File file = new File(pathConfig);
-            output = new FileOutputStream(file, false);
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-            output.write((MAX_REACHED_NAME_PROPERTY + "=" + Double.toString(MAX_REACHED)).getBytes());
-            output.flush();
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(EffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(EffortCalculator.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                if (output != null) {
-                    output.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        return;
+    }
+
+    public synchronized double getFreqAtVMASpeedOfMovement(Movement movement) {
+        return freqAtVMAByMovements[movement.ordinal()];
     }
     
     /**
@@ -219,6 +225,14 @@ public abstract class EffortCalculator extends TimerTask {
          */
         public double getMAX_REACHED() {
             return EffortCalculator.this.getMAX_REACHED();
+        }
+        
+        public double getFreqAtVMA() {
+            return EffortCalculator.this.getFreqAtVMASpeed();
+        }
+
+        public double getCurrentFreqTargetted() {
+            return EffortCalculator.this.getCurrentFreqTargetted();
         }
     }
 }

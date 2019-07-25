@@ -32,16 +32,18 @@ public class Background extends WallObject {
      * 
      * @param x start horizontal position
      * @param y start vertical position
+     * @param mode wich type of background to draw
      * @throws IOException if we can't find the image
      */
     public Background(int x, int y, Mode mode) throws IOException {
-        super("/assets/background/background_rock.png", x, y);
+        super(x, y);
         super.image = imageMode[mode.ordinal()];
     }
     
     /**
      * move the background down or line it up to simulate infinite scrolling down
      * @param increment step range of each call.
+     * @param currentMode wich type of background to draw
      */
     public void incrementY(int increment, Mode currentMode) {
         this.y += increment;

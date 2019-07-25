@@ -1,5 +1,6 @@
 package menu;
 
+import components.EndPopupDialogBox;
 import effortMeasurer.EffortCalculator;
 import heigvd.gamification.Background;
 import heigvd.gamification.GameEngine;
@@ -9,6 +10,7 @@ import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Observer;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -17,7 +19,7 @@ import javax.swing.JPanel;
  * 
  * @author jimmy
  */
-public class GamePanel extends JPanel {
+public class GamePanel extends JPanel implements Observer {
 
     private Background backOne;
     private Background backTwo;
@@ -32,16 +34,20 @@ public class GamePanel extends JPanel {
     
     private final int WINDOW_CENTER;
     private final int WALL_HEIGHT;
-    private final int MIN_X;
+    private int MIN_X;
+    private EndPopupDialogBox endBox = null;
+    private final Menu window;
     
-    public GamePanel(JFrame window, GameEngine gameEngine, EffortCalculator effortCalculator) throws IOException {
+    public GamePanel(JFrame window, GameEngine gameEngine, EffortCalculator effortCalculator) {
+        this.window = (Menu)window;
         this.gameEngine = gameEngine;
         backOne = gameEngine.getBackOne();
         backTwo = gameEngine.getBackTwo();
         
         WINDOW_CENTER = Toolkit.getDefaultToolkit().getScreenSize().width / 2;
         WALL_HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height;
-        MIN_X = WINDOW_CENTER - backOne.getImageWidth() / 2;
+        MIN_X = 0;
+        gameEngine.addEndObserver(this);
     }
     
     
@@ -67,6 +73,7 @@ public class GamePanel extends JPanel {
  
         if (back == null) {
             back = (BufferedImage)(createImage(getWidth(), getHeight()));
+            MIN_X = (getWidth() - backOne.getImageWidth()) / 2;
         }
  
         // Create a buffer to draw to
@@ -74,10 +81,14 @@ public class GamePanel extends JPanel {
  
         // draw the game object's considering their position and interpolation
         int interpolationBackgrounds = (int) (gameEngine.getSpeed() * interpolation);
-        int interpolationCharacterX = (int)(gameEngine.getCharacter().getSpeed() * interpolation);
+        int interpolationCharacterX;
         backOne.draw(buffer, MIN_X, interpolationBackgrounds);
         backTwo.draw(buffer, MIN_X, interpolationBackgrounds);
-        gameEngine.getCharacter().draw(buffer, MIN_X + interpolationCharacterX, 0, gameEngine.isIsShieldActivated());
+        for (heigvd.gamification.Character character : gameEngine.getCharacter()) {
+            interpolationCharacterX = (int)(character.getSpeed() * interpolation);
+            character.draw(buffer, MIN_X + interpolationCharacterX, 0, gameEngine.isIsShieldActivated());
+            character.draw(buffer, MIN_X + interpolationCharacterX, 0, gameEngine.isIsShieldActivated());
+        }
         for (FallingItem obstacle : gameEngine.getObstacles()) {
             if (obstacle != null && obstacle.getY() < WALL_HEIGHT) {
                 int interpolationObstacle = (int) (interpolationBackgrounds + (obstacle.getSpeed() + 1/2.0 * obstacle.getAcceleration() * Math.pow(interpolation, 2)));
@@ -98,5 +109,12 @@ public class GamePanel extends JPanel {
     public void setInterpolation(float interp)
     {
        interpolation = interp;
+    }
+
+    @Override
+    public void update(java.util.Observable o, Object o1) {
+        if (endBox == null) {
+            endBox = new EndPopupDialogBox(window, gameEngine.getScore(), gameEngine.getMedalsWon());
+        }
     }
 }

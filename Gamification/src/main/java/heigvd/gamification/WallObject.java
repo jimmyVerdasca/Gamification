@@ -24,12 +24,24 @@ public abstract class WallObject {
      * @param imagePath path where is store de image of the object
      * @param x horizontal position of the object
      * @param y vertical position of the object
+     * @throws java.io.IOException if we can't read the given image file
      */
     public WallObject(String imagePath, int x, int y) throws IOException {
         this.image = ImageIO.read(Background.class.getResource(imagePath));
         this.x = x;
         this.y = y;
         this.path = imagePath;
+    }
+    
+    /**
+     * constructor to call only if we set ourself the image
+     * 
+     * @param x horizontal position of the object
+     * @param y vertical position of the object
+     */
+    public WallObject(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
     
     /**

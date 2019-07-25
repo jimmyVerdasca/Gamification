@@ -1,5 +1,6 @@
 package effortMeasurer;
 
+import Program.Movement;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -24,7 +25,7 @@ public class IMUCycleEffortCalculatorTest {
             throws IOException, 
             FileNotFoundException, 
             ParseException {
-        ec = new IMUCycleEffortCalculator();
+        ec = new IMUCycleEffortCalculator(Movement.RUNNING);
     }
     
     @BeforeClass
@@ -55,8 +56,8 @@ public class IMUCycleEffortCalculatorTest {
         System.out.println("testing mapping function");
         Method method = IMUCycleEffortCalculator.class.getDeclaredMethod("mappingFunction", double.class);
         method.setAccessible(true);
-        double one = (double) method.invoke(ec, ec.getEXPECTED_MAX_AVERAGE());
-        assertEquals(ec.getEXPECTED_MAX_AVERAGE(), one, 0.0000000000001);
+        double one = (double) method.invoke(ec, ec.getCurrentFreqTargetted());
+        assertEquals(ec.getCurrentFreqTargetted(), one, 0.0000000000001);
         
         double zero = (double) method.invoke(ec, 0);
         assertEquals(0, zero, 0.0000000000001);
@@ -64,13 +65,13 @@ public class IMUCycleEffortCalculatorTest {
         double max = (double) method.invoke(ec, ec.getMAX_REACHED());
         assertEquals(ec.getMAX_REACHED(), max, 0.0000000000001);
         
-        double valueMidUp = ec.getEXPECTED_MAX_AVERAGE() + 
-                0.5 * (ec.getMAX_REACHED() - ec.getEXPECTED_MAX_AVERAGE());
+        double valueMidUp = ec.getCurrentFreqTargetted() + 
+                0.5 * (ec.getMAX_REACHED() - ec.getCurrentFreqTargetted());
         double middleUp = (double) method.invoke(ec, valueMidUp);
-        assertTrue(middleUp >= ec.getEXPECTED_MAX_AVERAGE() && middleUp <= ec.getMAX_REACHED());
+        assertTrue(middleUp >= ec.getCurrentFreqTargetted() && middleUp <= ec.getMAX_REACHED());
         
-        double middleDown = (double) method.invoke(ec, ec.getEXPECTED_MAX_AVERAGE() * 0.5);
-        assertTrue(middleDown <= ec.getEXPECTED_MAX_AVERAGE() && middleDown >= 0);
+        double middleDown = (double) method.invoke(ec, ec.getCurrentFreqTargetted() * 0.5);
+        assertTrue(middleDown <= ec.getCurrentFreqTargetted() && middleDown >= 0);
         
     }
     
