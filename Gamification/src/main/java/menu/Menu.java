@@ -83,6 +83,10 @@ public class Menu  extends JFrame {
         gameLoop.runGameLoop();
     }
     
+    /**
+     * launch the loading panel
+     * @param window main JFrame
+     */
     public void load(Menu window) {
         loadingPanel = new LoadingPanel(window);
         window.getContentPane().removeAll();
@@ -118,6 +122,13 @@ public class Menu  extends JFrame {
         menu.setVisible(true);
     }
     
+    /**
+     * launch a game with the specified number of players
+     * currently support one or two players
+     * 
+     * @param window main JFrame
+     * @param nbPlayers number of players wished
+     */
     void createGame(Menu window, int nbPlayers) {
         loadingPanel.setState(0, "creating the Workout");
         loadingPanel.setState(10, "setting up the game engine");
@@ -174,6 +185,10 @@ public class Menu  extends JFrame {
         play(window);
     }
     
+    /**
+     * launch the menu panel
+     * @param window main JFrame
+     */
     public void menu(Menu window) {
         resetDisplay(window);
         window.getContentPane().add(menuPanel, BorderLayout.CENTER);
@@ -181,6 +196,9 @@ public class Menu  extends JFrame {
         window.repaint();
     }
     
+    /**
+     * stop properly the game
+     */
     public void resetGame() {
         if (program != null && program.getIsRunning()) {
             program.stop();
@@ -188,10 +206,18 @@ public class Menu  extends JFrame {
         effortCalculator.stop();
     }
     
+    /**
+     * clear the main JFrame
+     * @param window 
+     */
     private void resetDisplay(Menu window) {
         window.getContentPane().removeAll();
     }
 
+    /**
+     * launch the create workout panel
+     * @param menu mainJFrame
+     */
     void createWorkout(Menu menu) {
         resetDisplay(menu);
         menu.getContentPane().add(new CreateWorkoutPanel(menu), BorderLayout.CENTER);
@@ -199,10 +225,19 @@ public class Menu  extends JFrame {
         menu.repaint();
     }
 
+    /**
+     * set the workout of the game
+     * @param menu main JFrame
+     * @param program the new workout
+     */
     void setProgram(Menu menu, AbstractProgram program) {
         menu.program = program;
     }
 
+    /**
+     * launch the help panel
+     * @param menu main JFrame
+     */
     void help(Menu menu) {
         resetDisplay(menu);
         menu.getContentPane().add(new HelpPanel(menu), BorderLayout.CENTER);

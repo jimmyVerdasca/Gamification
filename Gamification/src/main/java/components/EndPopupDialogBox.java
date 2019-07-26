@@ -1,19 +1,12 @@
 package components;
 
-import static com.sun.java.accessibility.util.AWTEventMonitor.addMouseListener;
-import static com.sun.java.accessibility.util.AWTEventMonitor.addMouseMotionListener;
-import heigvd.gamification.Background;
 import heigvd.gamification.rules.RulesName;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -21,24 +14,19 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
-import javax.swing.GroupLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -53,12 +41,17 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 /**
- *
+ * Pop up appearing when the game ends
+ * Allow to see the medals received, the scores stored in the ranking.json file
+ * And allow to store his own score in the same file
+ * 
  * @author jimmy
  */
 public class EndPopupDialogBox {
     
-    // window
+    /**
+     * popup that we will create
+     */
     JWindow w;
     int width = 600;
     int height = 900;
@@ -66,25 +59,59 @@ public class EndPopupDialogBox {
     
     int xPosition = (Toolkit.getDefaultToolkit().getScreenSize().width - width) / 2;
     int yPosition = (Toolkit.getDefaultToolkit().getScreenSize().height - height ) / 2;
+    
+    /**
+     * temp value of the horizontal position when we clicked the mouse.
+     * allow to drag the popup
+     */
     int xPressed;
+    
+    /**
+     * temp value of the vertical position when we clicked the mouse.
+     * allow to drag the popup
+     */
     int yPressed;
+    
+    /**
+     * path of the score file should be a DB in the futur
+     */
     final String PATH_RANK = "ranking.json";
+    
+    /**
+     * component where we will write our name to register our score
+     */
     JTextField nameTextField;
+    
+    /**
+     * parent JFrame that launched the popup
+     * (necessary to be able to focus the popup)
+     */
     private final Menu menu;
     
-    // constructor
+    /**
+     * constructor
+     * 
+     * @param menu JFrame parent that launched this popup
+     * @param score at the end of the game
+     * @param medalsWon medals won in the game
+     */
     public EndPopupDialogBox(Menu menu, long score, List<RulesName> medalsWon)
     {
-        // create a window
         w = new JWindow(menu);
         w.setSize(width, height);
         w.setLocation(xPosition, yPosition);
         w.setFocusable(true);
         this.menu = menu;
         
+        /**
+         * store the ranking in a treemap
+         */
         TreeMap<Long, List<String>> mapRanking = readRankFile(PATH_RANK);
         
-        
+        /**
+         * iterate over medals, store them in a JScrollPane and calculate the
+         * new score
+         */
         DefaultListModel dlm = new DefaultListModel();
         int scoreRule;
         for (int i = 0; i < medalsWon.size(); i++) {
@@ -125,6 +152,7 @@ public class EndPopupDialogBox {
         nameTextField.setMinimumSize(nameTextField.getPreferredSize());
         nameTextField.setAlignmentX(Component.CENTER_ALIGNMENT);
         nameTextField.setFont(new Font("Papyrus", Font.BOLD, 20));
+        // nameTextField can only have alphanumeric values
         nameTextField.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent ke) {
@@ -182,6 +210,10 @@ public class EndPopupDialogBox {
         
         w.add(panel);
         
+        /**
+         * register the score with current name in text field if the register
+         * button is clicked
+         */
         registerButton.addActionListener((ActionEvent e) -> {
             menu.load(menu);
             Thread loop = new Thread()
@@ -210,8 +242,11 @@ public class EndPopupDialogBox {
             loop.start(); 
         });
         
+        /**
+         * back to menu
+         */
         backButton.addActionListener((ActionEvent e) -> {
-            menu.load(menu);
+            menu.load(menu); // to delete line
             Thread loop = new Thread()
             {
                 @Override
@@ -224,6 +259,7 @@ public class EndPopupDialogBox {
             loop.start(); 
         });
         
+        // alow to drag the popup
         w.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent me) {
@@ -243,6 +279,12 @@ public class EndPopupDialogBox {
         w.setVisible(true);
     }
     
+    /**
+     * store the treemap in the ranking file with the new name and score
+     * @param mapRanking treemap to register as ranking in a file
+     * @param newName the new name to store
+     * @param score the new score to store
+     */
     public void saveRank(TreeMap<Long, List<String>> mapRanking, String newName, long score) {
         JSONObject sampleObject = new JSONObject();
         boolean added = false;
@@ -296,6 +338,12 @@ public class EndPopupDialogBox {
         return mapRanking;
     }
     
+    /**
+     * check if a name is contained in the treemap
+     * @param map the treemap of rank
+     * @param name the name we are looking for
+     * @return true if the name is contained in the ranking treemap
+     */
     private boolean mapContains(TreeMap<Long, List<String>> map, String name) {
         for (List<String> list : map.values()) {
             if(list.contains(name)) {
@@ -305,6 +353,9 @@ public class EndPopupDialogBox {
         return false;
     }
     
+    /**
+     * list to store medals info and display them in a JScrollPane
+     */
     class ListEntry
     {
         private String value;
@@ -327,6 +378,9 @@ public class EndPopupDialogBox {
             return value;
         }
     }
+    /**
+     * renderer to use to display medals
+     */
     class ListEntryCellRenderer
             extends JLabel implements ListCellRenderer
     {

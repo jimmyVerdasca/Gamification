@@ -1,9 +1,6 @@
 package components;
 
-import Program.AbstractProgram;
 import Program.AbstractProgram.LengthObservable;
-import Program.AbstractProgram.PartObservable;
-import effortMeasurer.EffortCalculator;
 import effortMeasurer.EffortCalculator.EffortObservable;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -16,31 +13,66 @@ import java.util.Observer;
 import javax.swing.JPanel;
 
 /**
- *
+ * Panel where is drawn the graph summarizing the workout and the history
+ * efforts of the user 
+ * 
  * @author jimmy
  */
 public class GraphPanel extends JPanel implements Observer {
     private final Object lock = new Object();
-    double[][] data = {{1.0,60}, {1.2,60}, {0.6,600}};
-    double xTotal;
-    double yMax;
+    
+    /**
+     * workout plan (couple with intensities and length)
+     */
+    double[][] workoutData;
+    
+    /**
+     * length of the workout
+     */
+    double workoutLength;
+    
+    /**
+     * maximum intensity ever reached
+     */
+    double currentMaximumIntensity;
+    
+    /**
+     * padding of the axes
+     */
     final int PAD = 20;
+    
+    /**
+     * current length progress of the workout
+     */
     double currentLength = 0;
+    
+    /**
+     * all the effort registred until now
+     */
     List<Double> listEffortOverLength;
 
-    public GraphPanel(double[][] data) {
-        this.data = data;
-        xTotal = 0;
-        yMax = data[0][0];
-        for (double[] d : data) {
-            xTotal += d[1];
-            if(yMax < d[0]) {
-                yMax = d[0];
+    /**
+     * constructor
+     * 
+     * @param workoutPlan 
+     */
+    public GraphPanel(double[][] workoutPlan) {
+        this.workoutData = workoutPlan;
+        workoutLength = 0;
+        currentMaximumIntensity = workoutPlan[0][0];
+        for (double[] d : workoutPlan) {
+            workoutLength += d[1];
+            if(currentMaximumIntensity < d[0]) {
+                currentMaximumIntensity = d[0];
             }
         }
         listEffortOverLength = new ArrayList();
     }
     
+    /**
+     * how the graph is drawn
+     * @param g 
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -51,16 +83,16 @@ public class GraphPanel extends JPanel implements Observer {
         int h = getHeight();
         g2.drawLine(PAD, 0, PAD, h-PAD);
         g2.drawLine(PAD, h-PAD, w, h-PAD);
-        double xScale = (w - 2*PAD)/xTotal;
-        double yScale = (h - 2*PAD)/yMax;
+        double xScale = (w - 2*PAD)/workoutLength;
+        double yScale = (h - 2*PAD)/currentMaximumIntensity;
         // The origin location.
         int x0 = PAD;
         int y0 = h-PAD;
         g2.setPaint(Color.blue);
         int xBefore = x0;
-        for(int j = 0; j < data.length; j++) {
-            int xAfter = (int)(xScale * data[j][1]);
-            int y = (int)(yScale * data[j][0]);
+        for(int j = 0; j < workoutData.length; j++) {
+            int xAfter = (int)(xScale * workoutData[j][1]);
+            int y = (int)(yScale * workoutData[j][0]);
             g2.setPaint(Color.cyan);
             g2.fillRect(xBefore, y0 - y, xAfter, y);
             g2.setPaint(Color.BLACK);
@@ -80,6 +112,15 @@ public class GraphPanel extends JPanel implements Observer {
         }
     }
 
+    /**
+     * We are notified when a new effort is registred to be able to draw the
+     * history of effort
+     * We are also notified when the length of the workout changes to update
+     * the graph dynamically
+     * 
+     * @param o
+     * @param o1 
+     */
     @Override
     public void update(Observable o, Object o1) {
         if (o instanceof LengthObservable) {
@@ -90,8 +131,8 @@ public class GraphPanel extends JPanel implements Observer {
             if (listEffortOverLength.size() < Math.floor(currentLength)) {
                 EffortObservable detector = (EffortObservable)o;
                 double newValue = detector.getEffort() * detector.getCurrentFreqTargetted();
-                if (newValue > yMax) {
-                    yMax = newValue;
+                if (newValue > currentMaximumIntensity) {
+                    currentMaximumIntensity = newValue;
                 }
                 
                 synchronized (lock) {

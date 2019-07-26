@@ -1,9 +1,6 @@
 package components;
 
-import Program.evaluation.EvaluationManager;
-import Program.evaluation.EvaluationRate;
 import heigvd.gamification.Background;
-import heigvd.gamification.rules.RulesManager;
 import heigvd.gamification.rules.RulesManager.WinRuleObservable;
 import heigvd.gamification.rules.RulesName;
 import java.awt.Graphics;
@@ -33,6 +30,9 @@ public class MedalsPanel extends JPanel implements Observer {
     private Image medalImage;
     private final int MAX_MEDALS = 8;
 
+    /**
+     * constructor
+     */
     public MedalsPanel() {
         super();
         rules = new ArrayList<>();
@@ -53,6 +53,10 @@ public class MedalsPanel extends JPanel implements Observer {
         }
     }
     
+    /**
+     * how the component is drawn
+     * @param g 
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -75,6 +79,13 @@ public class MedalsPanel extends JPanel implements Observer {
         }
     }
     
+    /**
+     * is notified each time an objectif is succeeded, add the medal to the list
+     * and repaint the component
+     * 
+     * @param o
+     * @param o1 
+     */
     @Override
     public void update(Observable o, Object o1) {
         if (o instanceof WinRuleObservable) {

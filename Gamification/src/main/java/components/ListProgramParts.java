@@ -1,10 +1,7 @@
 package components;
 
-import Program.AbstractProgram;
-import Program.WorkoutPart;
 import java.awt.Color;
 import java.awt.Component;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.ListCellRenderer;

@@ -1,12 +1,9 @@
 package menu;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
-import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.Box;
@@ -14,7 +11,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.SwingUtilities;
 
 /**
  * Loading Panel while we create a game
@@ -33,6 +29,11 @@ public class LoadingPanel extends JPanel {
     private JLabel label;
     private final Menu window;
     
+    /**
+     * constructor
+     * 
+     * @param window parent JFrame
+     */
     public LoadingPanel(Menu window) {
         super();
         this.window = window;

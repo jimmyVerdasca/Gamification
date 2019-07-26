@@ -1,8 +1,7 @@
 package heigvd.gamification;
 
 /**
- * Game modes (background) change relative to the workout intensity
- * 
+ * Game modes (background) change relatively to the workout intensity
  * 
  * @author jimmy
  */

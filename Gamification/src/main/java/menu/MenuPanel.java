@@ -1,28 +1,23 @@
 package menu;
 
-import Program.AbstractProgram;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
-import java.lang.reflect.InvocationTargetException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 
 /**
  * Class that represent the view when we are in the menu. 
- * Final buttons expected :
+ * buttons :
  * 
  * Play solo
- * Play Cooperative
- * Play Competitive
- * Options
+ * Play Duo
+ * Create Workout
+ * Help
  * Quit
  * 
  * @author jimmy

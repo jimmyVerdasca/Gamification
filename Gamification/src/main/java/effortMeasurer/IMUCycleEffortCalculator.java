@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 import org.json.simple.parser.ParseException;
 import util.ArrayUtil;
 import static util.ArrayUtil.findIndexOfMaxIn;
-import util.DataFileUtil;
 
 /**
  * Implementation of the EffortCalculator that

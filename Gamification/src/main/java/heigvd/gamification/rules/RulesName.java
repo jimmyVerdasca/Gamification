@@ -13,12 +13,23 @@ public enum RulesName {
     ZIGZAG_ROCKS(20000),
     EXCELLENT_EFFORT(30000);
     
+    /**
+     * the score obtained when the Rule is succeeded
+     */
     private int score;
     
+    /**
+     * private constructor
+     * @param score obtained when the Rule is succeeded
+     */
     private RulesName(int score) {
         this.score = score;
     }
 
+    /**
+     * return the score obtained when the Rule is succeeded
+     * @return the score obtained when the Rule is succeeded
+     */
     public int getScore() {
         return score;
     }

@@ -6,11 +6,19 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 
 /**
- *
+ * Utilitary class to manipulate images
+ * 
  * @author jimmy
  */
 public class ImageUtil {
     
+    /**
+     * method to scale easily an image to the new specified width and height
+     * @param srcImg source image
+     * @param w the new width wished
+     * @param h the new heigth wished
+     * @return the image resized
+     */
     public static Image getScaledImage(Image srcImg, int w, int h){
         BufferedImage resizedImg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = resizedImg.createGraphics();

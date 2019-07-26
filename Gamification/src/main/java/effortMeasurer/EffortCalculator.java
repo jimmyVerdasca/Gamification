@@ -1,18 +1,10 @@
 package effortMeasurer;
 
 import Program.Movement;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * abstract class to implement if we want to use different kinds of detector

@@ -16,14 +16,32 @@ import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 /**
- *
+ * Panel where are drawn the smiley relatively to the Workout Evaluation
+ * 
  * @author jimmy
  */
 public class EvaluationPanel extends JPanel implements Observer {
+    
+    /**
+     * current Evaluations to draw
+     */
     private EvaluationRate[] evaluations;
+    
+    /**
+     * Evaluation mapping image relatively to the enum EvaluationRate ordinal
+     */
     private Image[] evaluationsImages;
+    
+    /**
+     * buffer where we will draw
+     */
     private Object bufferImage;
 
+    /**
+     * constructor
+     * 
+     * @param nbParts number of parts of the workout
+     */
     public EvaluationPanel(int nbParts) {
         super();
         EvaluationRate[] listRate = EvaluationRate.values();
@@ -41,7 +59,10 @@ public class EvaluationPanel extends JPanel implements Observer {
         }
     }
     
-    
+    /**
+     * how is drawn the component
+     * @param g 
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -61,6 +82,11 @@ public class EvaluationPanel extends JPanel implements Observer {
         }
     }
 
+    /**
+     * we are notified when an evaluation changes and we redraw the component
+     * @param o
+     * @param o1 
+     */
     @Override
     public void update(Observable o, Object o1) {
         if (o instanceof ObservableEvaluation) {

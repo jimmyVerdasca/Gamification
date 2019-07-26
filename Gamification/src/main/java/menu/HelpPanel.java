@@ -17,7 +17,8 @@ import static javax.swing.SwingConstants.CENTER;
 import util.ImageUtil;
 
 /**
- *
+ * help panel showing hot to play at the game
+ * 
  * @author jimmy
  */
 public class HelpPanel extends JPanel {
@@ -34,6 +35,11 @@ public class HelpPanel extends JPanel {
     private final ImageIcon shieldIcon;
     private final ImageIcon boostIcon;
 
+    /**
+     * constructor
+     * 
+     * @param menu parent JFrame
+     */
     HelpPanel(Menu menu) {
         super();
         Container cp = menu.getContentPane();
@@ -148,6 +154,13 @@ public class HelpPanel extends JPanel {
         });
     }
     
+    /**
+     * utilitary method to create a button
+     * 
+     * @param icon of the button
+     * @param text of the button
+     * @return the button created
+     */
     private JLabel addLabel(ImageIcon icon, String text) {
         JLabel label = new JLabel(text);
         label.setFont(font);

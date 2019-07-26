@@ -8,8 +8,16 @@ package Program;
  */
 public class TimeProgram extends AbstractProgram {
     
+    /**
+     * store the current time when the program is launched
+     */
     private long startingTime;
+    
+    /**
+     * true when the program is launched until he ends
+     */
     private boolean running = false;
+    
     /**
      * constructor
      * @param parts

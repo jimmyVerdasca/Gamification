@@ -26,7 +26,9 @@ import static javax.swing.ListSelectionModel.SINGLE_SELECTION;
 import util.ImageUtil;
 
 /**
- *
+ * Left panel in game showing the workout informations
+ * mainly the dynamic graph, workout part list and the workout evaluation
+ * 
  * @author jimmy
  */
 public class ListProgramPanel extends JPanel {
@@ -36,6 +38,12 @@ public class ListProgramPanel extends JPanel {
     private ImageIcon[] icons; 
     private final GraphPanel graphPanel;
     
+    /**
+     * constructor
+     * 
+     * @param program workout
+     * @param effortCalculator detector
+     */
     public ListProgramPanel(AbstractProgram program, EffortCalculator effortCalculator) {
         BoxLayout vfLayout = new BoxLayout(this, BoxLayout.Y_AXIS);
         setLayout(vfLayout);

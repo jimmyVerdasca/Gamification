@@ -46,6 +46,11 @@ public class CreateWorkoutPanel extends JPanel {
     private final JList intensityList;
     private final JList programPartsList;
     
+    /**
+     * constructor
+     * 
+     * @param menu parent JFrame
+     */
     CreateWorkoutPanel(Menu menu) {
         super();
         Font font = new Font("Papyrus", Font.BOLD, 30);
@@ -196,13 +201,22 @@ public class CreateWorkoutPanel extends JPanel {
         });
     }
     
+    /**
+     * utilitary method to create a button
+     * 
+     * @param text of the button
+     * @param font of the button
+     * @return the button created
+     */
     private JButton createButton(String text, Font font) {
         JButton button = new JButton(text);
         button.setFont(font);
         return button;
     }
     
-    
+    /**
+     * add a part if possible in the workout in creation progress
+     */
     private void addPart() {
         if (intensityList.getSelectedValue() != null
                 && movementList.getSelectedValue() != null
@@ -215,11 +229,21 @@ public class CreateWorkoutPanel extends JPanel {
             listProgram.addElement(newPart);
         }
     }
+    
+    /**
+     * remove a part of the workout in creation progress
+     */
     private void removePart() {
         if (programPartsList.getSelectedIndex() != -1) {
             listProgram.remove(programPartsList.getSelectedIndex());
         }
     }
+    
+    /**
+     * create a workout with the workoutPart list content
+     * 
+     * @return the new workout created
+     */
     private AbstractProgram createProgram() {
         WorkoutPart[] listParts = new WorkoutPart[listProgram.getSize()];
         for (int i = 0; i < listProgram.getSize(); i++) {

@@ -9,7 +9,6 @@ import javax.bluetooth.RemoteDevice;
 import javax.bluetooth.UUID;
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
-import util.DataFileUtil;
 
 /**
  * Handler of one bluetooth device/service

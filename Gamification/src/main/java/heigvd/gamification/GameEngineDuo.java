@@ -1,9 +1,5 @@
 package heigvd.gamification;
 
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * GameEngine for a game with 2 players
  * 
@@ -15,10 +11,22 @@ import java.util.logging.Logger;
  */
 public class GameEngineDuo extends GameEngine {
 
+    /**
+     * constructor
+     * 
+     * @param firstMode mode with wich we start the game
+     */
     public GameEngineDuo(Mode firstMode) {
         super(firstMode, 2);
     }
     
+    /**
+     * override the setSpeed solo mode to add a aerodynamic effect
+     * The slow is calculated relatively to the dispersion between both players
+     * 
+     * @param percent effort received to set the speed
+     * @param maxPossible maximum effort ever reached
+     */
     @Override
     public void setSpeed(double percent, double maxPossible) {
         double sum = 0.0, standardDeviation = 0.0;
